@@ -5,7 +5,7 @@ import { BEAR, WOLF, FOX, CAPULION, CAT, SpriteLane } from './sprites.jsx';
 
 /* Same parchment map + warm vignette backdrop as the Espressopia landing page */
 const BASE   = import.meta.env.BASE_URL || '/'
-const BG_URL = `${BASE}assets/Espresso/Espresso/BG.png`
+const BG_URL = `${BASE}assets/Espresso/Espresso/opt/BG.jpg`
 const PAGE_BG = {
   backgroundColor: '#2D1008',
   backgroundImage: [

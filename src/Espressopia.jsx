@@ -1,10 +1,11 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const BASE    = import.meta.env.BASE_URL || '/'
-const BG_URL  = `${BASE}assets/Espresso/Espresso/BG.png`
-const IMG_DIR = `${BASE}assets/Espresso/Espresso/`
-const BGM_URL = `${BASE}assets/Espresso/MorningWalk.m4a`
+const BASE     = import.meta.env.BASE_URL || '/'
+const IMG_DIR  = `${BASE}assets/Espresso/Espresso/`
+const TILE_DIR = `${IMG_DIR}opt/`                 // downscaled tiles (small files)
+const BG_URL   = `${TILE_DIR}BG.jpg`              // JPEG backdrop (2.3MB → 275KB)
+const BGM_URL  = `${BASE}assets/Espresso/MorningWalk.m4a`
 
 /* ─── Scale derived from assembled image (Group 30.png = 17324×13436 px) ───
    Step_x = 4335 px, Step_y = 4368 px  (tiles barely touch in assembled)
@@ -116,24 +117,32 @@ function Ambience() {
 
 export default function Espressopia() {
   const [hov, setHov] = useState(null)
-  const fitRef = useRef(null)
+  const areaRef = useRef(null)
+  const titleRef = useRef(null)
   const [scale, setScale] = useState(1)
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const navigate = useNavigate()
   const logoUrl = `${BASE}assets/Espresso/Espresso/ESPRESSOPHIA.png`
 
-  /* scale the map to fit the available area (keeps aspect ratio, no clipping) */
+  /* Scale the map to fit the space left under the title, so the title+map block
+     stays one centred group on every aspect ratio (no big empty gap). */
   useLayoutEffect(() => {
-    const el = fitRef.current
-    if (!el) return
+    const area = areaRef.current
+    if (!area) return
     const fit = () => {
-      const { width, height } = el.getBoundingClientRect()
-      if (width && height) setScale(Math.min(width / MAP_W, height / MAP_H, 1))
+      const w = area.clientWidth
+      const h = area.clientHeight
+      const th = titleRef.current ? titleRef.current.offsetHeight : 0
+      const availH = h - th - 8        // 8px gap between title and map
+      if (w > 0 && availH > 0) {
+        setScale(Math.max(0.05, Math.min(w / MAP_W, availH / MAP_H, 1)))
+      }
     }
     fit()
     const ro = new ResizeObserver(fit)
-    ro.observe(el)
+    ro.observe(area)
+    if (titleRef.current) ro.observe(titleRef.current)
     return () => ro.disconnect()
   }, [])
 
@@ -247,45 +256,47 @@ export default function Espressopia() {
           )}
         </button>
 
-        {/* Title — metallic logo with a looping shine sweep across the letters */}
         <style>{`@keyframes titleSheen {
           0%   { background-position: 230% 0; }
           45%  { background-position: -130% 0; }
           100% { background-position: -130% 0; }
         }`}</style>
-        <div style={{display:'flex',justifyContent:'center',flexShrink:0,paddingTop:4,paddingBottom:4}}>
-          <div style={{ position:'relative', width:'min(520px,80%)' }}>
-            <img src={logoUrl} alt="Espressophia" style={{
-              display:'block', width:'100%', height:'auto',
-              filter:'contrast(1.08) saturate(1.12) drop-shadow(0 2px 12px rgba(180,130,30,0.6)) drop-shadow(0 1px 4px rgba(0,0,0,0.7))',
-            }}/>
-            {/* bright band swept across, clipped to the letter shapes via the logo mask */}
-            <div aria-hidden style={{
-              position:'absolute', inset:0, pointerEvents:'none', mixBlendMode:'screen',
-              WebkitMaskImage:`url("${logoUrl}")`, maskImage:`url("${logoUrl}")`,
-              WebkitMaskSize:'100% 100%', maskSize:'100% 100%',
-              WebkitMaskRepeat:'no-repeat', maskRepeat:'no-repeat',
-              background:'linear-gradient(100deg, transparent 38%, rgba(255,240,200,0.55) 46%, rgba(255,255,255,0.96) 50%, rgba(255,240,200,0.55) 54%, transparent 62%)',
-              backgroundSize:'300% 100%',
-              animation:'titleSheen 10s ease-in-out infinite',
-            }}/>
-          </div>
-        </div>
 
-        {/* ── Hex map wrapper (centres and scales map to fit) ── */}
-        <div ref={fitRef} style={{
+        {/* ── Title + map kept together as one vertically-centred group ── */}
+        <div ref={areaRef} style={{
           flex:1, width:'100%', minHeight:0,
-          display:'flex', alignItems:'center', justifyContent:'center',
-          overflow:'hidden',
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          gap:8, overflow:'hidden',
         }}>
-          {/* inner: natural-size map, scaled down to fit while keeping aspect ratio */}
+
+          {/* Title — metallic logo with a looping shine sweep across the letters */}
+          <div ref={titleRef} style={{display:'flex',justifyContent:'center',flexShrink:0,width:'100%'}}>
+            <div style={{ position:'relative', width:'min(520px,80%)' }}>
+              <img src={logoUrl} alt="Espressophia" style={{
+                display:'block', width:'100%', height:'auto',
+                filter:'contrast(1.08) saturate(1.12) drop-shadow(0 2px 12px rgba(180,130,30,0.6)) drop-shadow(0 1px 4px rgba(0,0,0,0.7))',
+              }}/>
+              {/* bright band swept across, clipped to the letter shapes via the logo mask */}
+              <div aria-hidden style={{
+                position:'absolute', inset:0, pointerEvents:'none', mixBlendMode:'screen',
+                WebkitMaskImage:`url("${logoUrl}")`, maskImage:`url("${logoUrl}")`,
+                WebkitMaskSize:'100% 100%', maskSize:'100% 100%',
+                WebkitMaskRepeat:'no-repeat', maskRepeat:'no-repeat',
+                background:'linear-gradient(100deg, transparent 38%, rgba(255,240,200,0.55) 46%, rgba(255,255,255,0.96) 50%, rgba(255,240,200,0.55) 54%, transparent 62%)',
+                backgroundSize:'300% 100%',
+                animation:'titleSheen 10s ease-in-out infinite',
+              }}/>
+            </div>
+          </div>
+
+          {/* map box sized to the scaled map; inner is natural size scaled from its top-left */}
+          <div style={{ width: MAP_W * scale, height: MAP_H * scale, flexShrink:0, position:'relative' }}>
           <div style={{
-            position:'relative',
+            position:'absolute', top:0, left:0,
             width: MAP_W,
             height: MAP_H,
-            flexShrink:0,
             transform:`scale(${scale})`,
-            transformOrigin:'center center',
+            transformOrigin:'top left',
           }}>
             <style>{`
               .town-plaque { transition: transform .18s ease; }
@@ -321,9 +332,10 @@ export default function Espressopia() {
                   onClick={() => { if (t.id === 'bar') navigate('/Huaroi'); else console.log('click:', t.id) }}
                 >
                   <img
-                    src={IMG_DIR + t.src}
+                    src={TILE_DIR + t.src}
                     alt={t.name}
                     draggable={false}
+                    decoding="async"
                     style={{ width:'100%', height:'100%', display:'block', pointerEvents:'none', userSelect:'none' }}
                   />
 
@@ -367,6 +379,7 @@ export default function Espressopia() {
                 </div>
               )
             })}
+          </div>
           </div>
         </div>
       </div>
