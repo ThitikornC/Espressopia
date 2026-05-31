@@ -3,6 +3,23 @@ import { useSearchParams } from 'react-router-dom';
 import { Zap, ArrowUpRight } from 'lucide-react';
 import { BEAR, WOLF, FOX, CAPULION, CAT, SpriteLane } from './sprites.jsx';
 
+/* Same parchment map + warm vignette backdrop as the Espressopia landing page */
+const BASE   = import.meta.env.BASE_URL || '/'
+const BG_URL = `${BASE}assets/Espresso/Espresso/BG.png`
+const PAGE_BG = {
+  backgroundColor: '#2D1008',
+  backgroundImage: [
+    'radial-gradient(ellipse 100% 55% at 50% 0%,   rgba(80,30,4,0.45) 0%,transparent 60%)',
+    'radial-gradient(ellipse 40% 100% at 0%   50%, rgba(10,2,0,0.55)  0%,transparent 55%)',
+    'radial-gradient(ellipse 40% 100% at 100% 50%, rgba(10,2,0,0.55)  0%,transparent 55%)',
+    'radial-gradient(ellipse 100% 55% at 50% 100%, rgba(6,1,0,0.6)    0%,transparent 60%)',
+    `url("${BG_URL}")`,
+  ].join(', '),
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+}
+
 /* ── Floor2 plan constants ──────────────────────────────────────────────── */
 const FLOOR2_KEY = 'floor2_zones'
 const PREVIEW_CAM1_KEY = 'preview_cam1_id'
@@ -85,7 +102,8 @@ export default function LayerGreedy() {
   const isCritical  = gaugeScore >= 85
 
   return (
-    <div className="min-h-screen w-full bg-[#1A0902] text-[#F2E4CC] font-sans px-2 py-6 sm:px-4 sm:py-8 md:px-6 md:py-8 select-none flex flex-col justify-center">
+    <div className="h-screen w-full overflow-y-auto select-none" style={PAGE_BG}>
+    <div className="min-h-full w-full text-[#F2E4CC] font-sans px-2 py-6 sm:px-4 sm:py-8 md:px-6 md:py-8 flex flex-col justify-center">
 
       {/* Rotate overlay: tablet portrait */}
       <div className="hidden md:portrait:flex fixed inset-0 z-[200] bg-[#1A0902]/95 backdrop-blur-sm flex-col items-center justify-center gap-8 pointer-events-none">
@@ -314,6 +332,7 @@ export default function LayerGreedy() {
           </div>
         </div>
 
+      </div>
       </div>
       </div>
     </div>
