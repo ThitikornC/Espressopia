@@ -1,4 +1,5 @@
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useState, useRef, useLayoutEffect, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const BASE    = import.meta.env.BASE_URL || '/'
 const BG_URL  = `${BASE}assets/Espresso/Espresso/BG.png`
@@ -78,12 +79,48 @@ const Corner = ({ rot=0 }) => (
   </svg>
 )
 
+/* ── Ambient golden motes (fireflies / drifting dust) over the whole scene ── */
+const rnd = (a, b) => a + Math.random() * (b - a)
+const MOTES = Array.from({ length: 30 }, () => ({
+  left: rnd(1, 99), top: rnd(4, 95),
+  size: rnd(2, 5).toFixed(1),
+  dx: `${rnd(-45, 45).toFixed(0)}px`,
+  dy: `${rnd(-55, -15).toFixed(0)}px`,   // drift gently upward
+  dt: `${rnd(8, 17).toFixed(1)}s`,       // drift duration
+  tw: `${rnd(2.5, 6).toFixed(1)}s`,      // twinkle duration
+  delay: `${rnd(0, 9).toFixed(1)}s`,
+  o0: rnd(0.04, 0.22).toFixed(2),        // dim point of the twinkle
+  o1: rnd(1, 0.95).toFixed(2),         // bright point of the twinkle
+}))
+
+function Ambience() {
+  return (
+    <div aria-hidden style={{ position:'absolute', inset:0, zIndex:6, pointerEvents:'none', overflow:'hidden' }}>
+      <style>{`
+        @keyframes moteDrift   { from { transform: translate(0,0) } to { transform: translate(var(--dx), var(--dy)) } }
+        @keyframes moteTwinkle { 0%,100% { opacity: var(--o0) } 50% { opacity: var(--o1) } }
+      `}</style>
+      {MOTES.map((m, i) => (
+        <span key={i} style={{
+          position:'absolute', left:`${m.left}%`, top:`${m.top}%`,
+          width:`${m.size}px`, height:`${m.size}px`, borderRadius:'50%',
+          background:'radial-gradient(circle, rgba(255,230,160,0.95) 0%, rgba(230,180,40,0.55) 45%, rgba(230,180,40,0) 72%)',
+          boxShadow:'0 0 6px 2px rgba(255,200,90,0.45)',
+          '--dx':m.dx, '--dy':m.dy, '--o0':m.o0, '--o1':m.o1,
+          animation:`moteDrift ${m.dt} ease-in-out ${m.delay} infinite alternate, moteTwinkle ${m.tw} ease-in-out ${m.delay} infinite`,
+        }}/>
+      ))}
+    </div>
+  )
+}
+
 export default function Espressopia() {
   const [hov, setHov] = useState(null)
   const fitRef = useRef(null)
   const [scale, setScale] = useState(1)
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
+  const navigate = useNavigate()
   const logoUrl = `${BASE}assets/Espresso/Espresso/ESPRESSOPHIA.png`
 
   /* scale the map to fit the available area (keeps aspect ratio, no clipping) */
@@ -151,18 +188,35 @@ export default function Espressopia() {
       display:'flex', alignItems:'center', justifyContent:'center',
     }}>
 
-      {/* ── Golden frame ── */}
+      {/* ── Golden motes drifting around the town ── */}
+      <Ambience />
+
+      {/* ── Golden frame (glossy metallic) ── */}
+      <style>{`@keyframes frameGlow {
+        0%,100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 14px rgba(230,180,40,0.18), inset 0 0 14px rgba(230,180,40,0.08); }
+        50%     { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 30px rgba(245,220,128,0.40), inset 0 0 22px rgba(245,220,128,0.16); }
+      }`}</style>
       <div style={{
         position:'relative', zIndex:5,
         width:'calc(100% - 28px)', height:'calc(100% - 20px)', maxWidth:1400,
-        border:'1.5px solid rgba(200,152,44,0.6)', boxSizing:'border-box',
+        borderStyle:'solid', borderWidth:'2px',
+        borderImage:'linear-gradient(135deg, #5a3c10 0%, #F5DC80 16%, #C8982C 34%, #7d5916 50%, #F5DC80 68%, #C8982C 86%, #5a3c10 100%) 1',
+        boxSizing:'border-box',
         display:'flex', flexDirection:'column', alignItems:'center',
         padding:'4px 8px 8px',
+        animation:'frameGlow 4.5s ease-in-out infinite',
       }}>
-        <div style={{position:'absolute',top:-3,left:-3}}><Corner rot={0}/></div>
-        <div style={{position:'absolute',top:-3,right:-3}}><Corner rot={90}/></div>
-        <div style={{position:'absolute',bottom:-3,left:-3}}><Corner rot={270}/></div>
-        <div style={{position:'absolute',bottom:-3,right:-3}}><Corner rot={180}/></div>
+        {/* ── Dark smoky vignette: fades the scene edges into shadow ── */}
+        <div aria-hidden style={{
+          position:'absolute', inset:0, zIndex:15, pointerEvents:'none',
+          boxShadow:'inset 0 0 175px 55px rgba(8,3,0,0.2), inset 0 0 65px 8px rgba(8,3,0,0.55)',
+          background:'radial-gradient(ellipse 84% 82% at 50% 42%, rgba(0,0,0,0) 200%, rgba(8,3,0,0.45) 74%, rgba(4,1,0,0.2) 100%)',
+        }}/>
+
+        <div style={{position:'absolute',top:-3,left:-3,zIndex:22}}><Corner rot={0}/></div>
+        <div style={{position:'absolute',top:-3,right:-3,zIndex:22}}><Corner rot={90}/></div>
+        <div style={{position:'absolute',bottom:-3,left:-3,zIndex:22}}><Corner rot={270}/></div>
+        <div style={{position:'absolute',bottom:-3,right:-3,zIndex:22}}><Corner rot={180}/></div>
 
         {/* ── Sound toggle ── */}
         <button
@@ -193,12 +247,29 @@ export default function Espressopia() {
           )}
         </button>
 
-        {/* Title */}
+        {/* Title — metallic logo with a looping shine sweep across the letters */}
+        <style>{`@keyframes titleSheen {
+          0%   { background-position: 230% 0; }
+          45%  { background-position: -130% 0; }
+          100% { background-position: -130% 0; }
+        }`}</style>
         <div style={{display:'flex',justifyContent:'center',flexShrink:0,paddingTop:4,paddingBottom:4}}>
-          <img src={logoUrl} alt="Espressophia" style={{
-            width:'min(520px,80%)', height:'auto',
-            filter:'drop-shadow(0 2px 12px rgba(180,130,30,0.6)) drop-shadow(0 1px 4px rgba(0,0,0,0.7))',
-          }}/>
+          <div style={{ position:'relative', width:'min(520px,80%)' }}>
+            <img src={logoUrl} alt="Espressophia" style={{
+              display:'block', width:'100%', height:'auto',
+              filter:'contrast(1.08) saturate(1.12) drop-shadow(0 2px 12px rgba(180,130,30,0.6)) drop-shadow(0 1px 4px rgba(0,0,0,0.7))',
+            }}/>
+            {/* bright band swept across, clipped to the letter shapes via the logo mask */}
+            <div aria-hidden style={{
+              position:'absolute', inset:0, pointerEvents:'none', mixBlendMode:'screen',
+              WebkitMaskImage:`url("${logoUrl}")`, maskImage:`url("${logoUrl}")`,
+              WebkitMaskSize:'100% 100%', maskSize:'100% 100%',
+              WebkitMaskRepeat:'no-repeat', maskRepeat:'no-repeat',
+              background:'linear-gradient(100deg, transparent 38%, rgba(255,240,200,0.55) 46%, rgba(255,255,255,0.96) 50%, rgba(255,240,200,0.55) 54%, transparent 62%)',
+              backgroundSize:'300% 100%',
+              animation:'titleSheen 10s ease-in-out infinite',
+            }}/>
+          </div>
         </div>
 
         {/* ── Hex map wrapper (centres and scales map to fit) ── */}
@@ -216,6 +287,11 @@ export default function Espressopia() {
             transform:`scale(${scale})`,
             transformOrigin:'center center',
           }}>
+            <style>{`
+              .town-plaque { transition: transform .18s ease; }
+              .town-plaque:hover { transform: translate(-50%,-50%) scale(1.06); }
+              .town-plaque:hover .town-plaque-ring { box-shadow: 0 8px 22px rgba(0,0,0,0.6), 0 0 20px rgba(230,180,40,0.5); }
+            `}</style>
             {tiles.map(t => {
               const isHov = hov === t.id
               return (
@@ -242,7 +318,7 @@ export default function Espressopia() {
                   }}
                   onMouseEnter={() => setHov(t.id)}
                   onMouseLeave={() => setHov(null)}
-                  onClick={() => console.log('click:', t.id)}
+                  onClick={() => { if (t.id === 'bar') navigate('/Huaroi'); else console.log('click:', t.id) }}
                 >
                   <img
                     src={IMG_DIR + t.src}
@@ -250,6 +326,44 @@ export default function Espressopia() {
                     draggable={false}
                     style={{ width:'100%', height:'100%', display:'block', pointerEvents:'none', userSelect:'none' }}
                   />
+
+                  {/* Name plaque living inside the Bar tile → /Huaroi dashboard */}
+                  {t.id === 'bar' && (
+                    <button
+                      className="town-plaque"
+                      onClick={(e) => { e.stopPropagation(); navigate('/Huaroi') }}
+                      aria-label="เปิดแดชบอร์ด Huaroi"
+                      style={{
+                        position:'absolute', left:'50%', top:'24%',
+                        transform:'translate(-50%,-50%)',
+                        zIndex:25, cursor:'pointer', border:'none', background:'transparent',
+                        padding:0, WebkitTapHighlightColor:'transparent', outline:'none',
+                      }}
+                    >
+                      <span className="town-plaque-ring" style={{
+                        display:'block', padding:2, borderRadius:9999,
+                        background:'linear-gradient(135deg, #7d5916 0%, #F5DC80 28%, #C8982C 55%, #8a6418 100%)',
+                        boxShadow:'0 4px 12px rgba(0,0,0,0.55)', transition:'box-shadow .18s ease',
+                      }}>
+                        <span style={{
+                          display:'block', padding:'4px 18px', borderRadius:9999,
+                          background:'linear-gradient(180deg, #3a1c0a 0%, #190a02 100%)',
+                          boxShadow:'inset 0 1px 0 rgba(245,220,128,0.25), inset 0 -2px 6px rgba(0,0,0,0.6)',
+                        }}>
+                          <span style={{
+                            fontFamily:'Georgia, "Times New Roman", serif',
+                            fontSize:22, fontWeight:700, letterSpacing:2, textTransform:'uppercase',
+                            whiteSpace:'nowrap', lineHeight:1.1,
+                            backgroundImage:'linear-gradient(180deg, #fff7e0 0%, #F5DC80 32%, #C8982C 62%, #7d5916 100%)',
+                            WebkitBackgroundClip:'text', backgroundClip:'text',
+                            WebkitTextFillColor:'transparent', color:'transparent',
+                            WebkitTextStroke:'0.4px rgba(60,30,5,0.35)',
+                            filter:'drop-shadow(0 1px 1px rgba(0,0,0,0.6))',
+                          }}>HUAROI</span>
+                        </span>
+                      </span>
+                    </button>
+                  )}
                 </div>
               )
             })}
