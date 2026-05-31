@@ -82,6 +82,8 @@ export default function Espressopia() {
   const [hov, setHov] = useState(null)
   const fitRef = useRef(null)
   const [scale, setScale] = useState(1)
+  const audioRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
   const logoUrl = `${BASE}assets/Espresso/Espresso/ESPRESSOPHIA.png`
 
   /* scale the map to fit the available area (keeps aspect ratio, no clipping) */
@@ -98,14 +100,23 @@ export default function Espressopia() {
     return () => ro.disconnect()
   }, [])
 
-  /* looping background music — browsers block autoplay-with-sound, so fall back
-     to starting on the first user interaction */
+  /* looping background music. Browsers block autoplay-with-sound, so we:
+     1) try to autoplay,
+     2) if blocked, start on the first user interaction,
+     3) and always expose a manual sound toggle button. */
   useLayoutEffect(() => {
     const audio = new Audio(BGM_URL)
     audio.loop = true
     audio.volume = 0.4
-    audio.play().catch(() => {
-      const start = () => { audio.play(); cleanup() }
+    audio.preload = 'auto'
+    audioRef.current = audio
+    audio.addEventListener('play',  () => setPlaying(true))
+    audio.addEventListener('pause', () => setPlaying(false))
+
+    const tryPlay = () => audio.play().then(() => true).catch(() => false)
+    tryPlay().then(ok => {
+      if (ok) return
+      const start = () => { tryPlay(); cleanup() }
       const cleanup = () => {
         window.removeEventListener('pointerdown', start)
         window.removeEventListener('keydown', start)
@@ -115,8 +126,15 @@ export default function Espressopia() {
       window.addEventListener('keydown', start)
       window.addEventListener('touchstart', start)
     })
-    return () => { audio.pause(); audio.src = '' }
+    return () => { audio.pause(); audio.src = ''; audioRef.current = null }
   }, [])
+
+  const toggleSound = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) audio.play().catch(() => {})
+    else audio.pause()
+  }
 
   return (
     <div style={{
@@ -145,6 +163,35 @@ export default function Espressopia() {
         <div style={{position:'absolute',top:-3,right:-3}}><Corner rot={90}/></div>
         <div style={{position:'absolute',bottom:-3,left:-3}}><Corner rot={270}/></div>
         <div style={{position:'absolute',bottom:-3,right:-3}}><Corner rot={180}/></div>
+
+        {/* ── Sound toggle ── */}
+        <button
+          onClick={toggleSound}
+          aria-label={playing ? 'Mute music' : 'Play music'}
+          style={{
+            position:'absolute', top:10, right:12, zIndex:30,
+            width:38, height:38, borderRadius:'50%',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            background:'rgba(25,10,2,0.75)',
+            border:'1.5px solid rgba(200,152,44,0.7)',
+            color:'#F5DC80', cursor:'pointer',
+            WebkitTapHighlightColor:'transparent', outline:'none',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.5)',
+          }}
+        >
+          {playing ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+              <path d="M16 8a4 4 0 0 1 0 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M18.5 5.5a8 8 0 0 1 0 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+              <path d="M16 9l5 5M21 9l-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          )}
+        </button>
 
         {/* Title */}
         <div style={{display:'flex',justifyContent:'center',flexShrink:0,paddingTop:4,paddingBottom:4}}>
