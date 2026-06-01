@@ -244,7 +244,7 @@ export default function LayerGreedy() {
 
           {/* COL 2: Gauge */}
           <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 hover:border-[#E6B428] h-[260px] md:h-0 md:min-h-full">
-            <div className="w-full text-left">
+            <div className="flex justify-between items-center mb-3 flex-shrink-0 w-full">
               <h2 className="text-xs font-bold text-gray-300 tracking-wider">ชั่วโมงการใช้งาน</h2>
             </div>
 
@@ -297,15 +297,17 @@ export default function LayerGreedy() {
           </div>
 
           {/* COL 3: sports-style award podium (อันดับ 1–5) — far-right column */}
-          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 md:p-1 flex flex-col transition-all duration-300 hover:border-[#E6B428] h-[260px] md:h-0 md:min-h-full" style={{ maxWidth: '100%' }}>
-            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-1 flex-shrink-0" style={{ fontSize: deviceSize === 'tablet' ? '10px' : '12px' }}>อันดับการใช้งาน</h2>
-            <div className="flex-1 min-h-0 flex items-end justify-center gap-0 pt-1" style={{ overflow: 'visible' }}>
+          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col overflow-hidden transition-all duration-300 hover:border-[#E6B428] h-[260px] md:h-0 md:min-h-full" style={{ maxWidth: '100%' }}>
+            <div className="flex justify-between items-center mb-3 flex-shrink-0 w-full">
+              <h2 className="text-xs font-bold text-gray-300 tracking-wider">Anyone can be Someone</h2>
+            </div>
+            <div className="flex-1 min-h-0 flex items-end justify-center gap-0 pt-1">
               {[
-                { rank: 4, h: 46, hTablet: 16, hMobile: 46 },
-                { rank: 2, h: 60, hTablet: 20, hMobile: 60 },
-                { rank: 1, h: 100, hTablet: 36, hMobile: 100 },
-                { rank: 3, h: 50, hTablet: 18, hMobile: 50 },
-                { rank: 5, h: 38, hTablet: 13, hMobile: 38 },
+                { rank: 4, h: 38, hTablet: 16, hMobile: 46 },
+                { rank: 2, h: 52, hTablet: 20, hMobile: 60 },
+                { rank: 1, h: 70, hTablet: 36, hMobile: 100 },
+                { rank: 3, h: 43, hTablet: 18, hMobile: 50 },
+                { rank: 5, h: 30, hTablet: 13, hMobile: 38 },
               ].map(({ rank, h, hTablet, hMobile }) => {
                 const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
                         : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
