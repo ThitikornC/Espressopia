@@ -5,7 +5,7 @@ import { BEAR, WOLF, FOX, CAPULION, CAT, CAPULIONWIN, CATRAMELLOSE, WOLFLICANOLO
 
 /* Same parchment map + warm vignette backdrop as the Espressopia landing page */
 const BASE   = import.meta.env.BASE_URL || '/'
-const BG_URL = `${BASE}assets/Espresso/Espresso/opt/BG.jpg`
+const BG_URL = `${BASE}assets/Espresso/Espresso/opt/BG.png`
 const PAGE_BG = {
   backgroundColor: '#2D1008',
   backgroundImage: [

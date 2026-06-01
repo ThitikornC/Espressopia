@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 const BASE     = import.meta.env.BASE_URL || '/'
 const IMG_DIR  = `${BASE}assets/Espresso/Espresso/`
 const TILE_DIR = `${IMG_DIR}opt/`                 // downscaled tiles (small files)
-const BG_URL   = `${TILE_DIR}BG.jpg`              // JPEG backdrop (2.3MB → 275KB)
+const BG_URL   = `${TILE_DIR}BG.png`
 const BGM_URL  = `${BASE}assets/Espresso/MorningWalk.m4a`
 
 /* ─── Scale derived from assembled image (Group 30.png = 17324×13436 px) ───
