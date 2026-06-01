@@ -132,12 +132,13 @@ export default function LayerGreedy() {
   /* small-phone proportions — shrink the chunky elements so the whole
      dashboard fits more comfortably on a narrow screen */
   const isMobile = deviceSize === 'mobile'
-  const rowH      = isMobile ? 62 : 66    // ranking card height
-  const coinSize  = isMobile ? 50 : 60    // ranking coin diameter
-  const iconSize  = isMobile ? 54 : 64    // centre icon
-  const laneH     = isMobile ? 80 : 110   // marathon lane height
-  const cupH      = isMobile ? 60 : 84    // finish-line trophy
-  const spriteH   = isMobile ? 86 : 115   // runner sprite
+  const isTablet = deviceSize === 'tablet'
+  const rowH     = isMobile ? 62 : 60
+  const coinSize = isMobile ? 50 : isTablet ? 48 : 60
+  const iconSize = isMobile ? 54 : isTablet ? 46 : 64
+  const laneH    = isMobile ? 80 : isTablet ? 90 : 110
+  const cupH     = isMobile ? 60 : isTablet ? 68 : 84
+  const spriteH  = isMobile ? 86 : isTablet ? 96 : 115
 
   return (
     <div className="h-screen w-full overflow-y-auto select-none" style={PAGE_BG}>
@@ -190,7 +191,7 @@ export default function LayerGreedy() {
         </div>
 
         {/* MAIN 3 COLUMNS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 min-h-[360px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 min-h-[360px] md:min-h-[240px] lg:min-h-[360px]">
 
           {/* COL 1: Camera density list */}
           <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col h-[260px] md:h-0 md:min-h-full overflow-hidden transition-all duration-300 hover:border-[#E6B428]">
@@ -231,7 +232,7 @@ export default function LayerGreedy() {
                       <div className="relative z-10 flex flex-col justify-center select-none min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[12px] font-black flex-shrink-0" style={{ color }}>#{i + 1}</span>
-                          <span className="text-[11px] font-bold tracking-wide leading-snug break-words" style={{ color, textShadow: `0 0 8px ${color}80` }}>{c.name}</span>
+                          <span className="font-bold leading-tight break-words line-clamp-2" style={{ color, fontSize: isMobile ? '8px' : isTablet ? '8px' : '11px', textShadow: `0 0 8px ${color}80` }}>{c.name}</span>
                         </div>
                         <span className="text-[9px] font-semibold tracking-wide mt-0.5" style={{ color: `${color}cc` }}>{c.count.toLocaleString()} ครั้ง</span>
                       </div>
@@ -303,11 +304,11 @@ export default function LayerGreedy() {
             </div>
             <div className="flex-1 min-h-0 flex items-end justify-center gap-0 pt-1">
               {[
-                { rank: 4, h: 38, hTablet: 16, hMobile: 46 },
-                { rank: 2, h: 52, hTablet: 20, hMobile: 60 },
-                { rank: 1, h: 70, hTablet: 36, hMobile: 100 },
-                { rank: 3, h: 43, hTablet: 18, hMobile: 50 },
-                { rank: 5, h: 30, hTablet: 13, hMobile: 38 },
+                { rank: 4, h: 38, hTablet: 38, hMobile: 46 },
+                { rank: 2, h: 52, hTablet: 52, hMobile: 60 },
+                { rank: 1, h: 70, hTablet: 70, hMobile: 100 },
+                { rank: 3, h: 43, hTablet: 43, hMobile: 50 },
+                { rank: 5, h: 30, hTablet: 30, hMobile: 38 },
               ].map(({ rank, h, hTablet, hMobile }) => {
                 const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
                         : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
@@ -320,7 +321,8 @@ export default function LayerGreedy() {
                    minus page(16) + card(40) + podium(32) padding, split 5 ways,
                    leaving a small gap — clamped to a sane 36–54px range */
                 const mobileChar = Math.max(36, Math.min(54, Math.floor((vw - 88) / 5) - 6))
-                const charSize = deviceSize === 'desktop' ? 90 : deviceSize === 'tablet' ? 16 : mobileChar
+                const tabletChar = Math.max(36, Math.min(60, Math.floor((vw - 88) / 5) - 4))
+                const charSize = deviceSize === 'desktop' ? 90 : deviceSize === 'tablet' ? tabletChar : mobileChar
                 const pedestalHeight = deviceSize === 'desktop' ? h : deviceSize === 'tablet' ? hTablet : hMobile
                 return (
                   <div key={rank} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full" style={{ marginRight: deviceSize === 'tablet' ? '-1px' : '0' }}>
@@ -418,7 +420,6 @@ export default function LayerGreedy() {
             ))}
           </div>
         </div>
-
       </div>
       </div>
     </div>
