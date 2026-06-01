@@ -67,9 +67,10 @@ export default function LayerGreedy() {
   const apiBase = (searchParams.get('gateway') || import.meta.env.VITE_GATEWAY_URL || '').replace(/\/$/, '')
 
   const [pulse, setPulse] = useState(true);
-  const [deviceSize, setDeviceSize] = useState(typeof window !== 'undefined' ? 
-    (window.innerWidth >= 1024 ? 'desktop' : window.innerWidth >= 768 ? 'tablet' : 'mobile') 
+  const [deviceSize, setDeviceSize] = useState(typeof window !== 'undefined' ?
+    (window.innerWidth >= 1024 ? 'desktop' : window.innerWidth >= 768 ? 'tablet' : 'mobile')
     : 'desktop')
+  const [vw, setVw] = useState(typeof window !== 'undefined' ? window.innerWidth : 1280)
 
   const cam1Id = localStorage.getItem(PREVIEW_CAM1_KEY) || ''
   const [cam1Pct, setCam1Pct] = useState(0)
@@ -111,6 +112,7 @@ export default function LayerGreedy() {
       const width = window.innerWidth
       const size = width >= 1024 ? 'desktop' : width >= 768 ? 'tablet' : 'mobile'
       setDeviceSize(size)
+      setVw(width)
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -126,6 +128,16 @@ export default function LayerGreedy() {
      numbers and the order/lead of the running characters below */
   const ranked = [...CENTERS].sort((a, b) => b.count - a.count)
   const maxCount = ranked[0].count
+
+  /* small-phone proportions — shrink the chunky elements so the whole
+     dashboard fits more comfortably on a narrow screen */
+  const isMobile = deviceSize === 'mobile'
+  const rowH      = isMobile ? 62 : 66    // ranking card height
+  const coinSize  = isMobile ? 50 : 60    // ranking coin diameter
+  const iconSize  = isMobile ? 54 : 64    // centre icon
+  const laneH     = isMobile ? 80 : 110   // marathon lane height
+  const cupH      = isMobile ? 60 : 84    // finish-line trophy
+  const spriteH   = isMobile ? 86 : 115   // runner sprite
 
   return (
     <div className="h-screen w-full overflow-y-auto select-none" style={PAGE_BG}>
@@ -149,7 +161,7 @@ export default function LayerGreedy() {
           <p className="text-[#E6B428] text-2xl font-bold tracking-wide">โปรดหมุนหน้าจอ</p>
           <p className="text-[#F2E4CC]/50 text-sm mt-2 leading-relaxed">แดชบอร์ดนี้ออกแบบสำหรับ<br />การแสดงผลแนวนอนเท่านั้น</p>
         </div>
-        <style>{`@keyframes rotateHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(15deg)}}`}</style>
+        <style>{`@keyframes rotateHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(15deg)}}@keyframes rankBorderPulse{0%,100%{border-color:#10b981;box-shadow:0 0 4px #10b98144}50%{border-color:#6ee7b7;box-shadow:0 0 20px #10b981ff,0 0 40px #10b981aa}}@keyframes cupFloat{0%,100%{transform:translateY(0px) scale(1);filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(230,180,40,0.5))}50%{transform:translateY(-6px) scale(1.04);filter:drop-shadow(0 8px 16px rgba(0,0,0,0.5)) drop-shadow(0 0 18px rgba(230,180,40,1)) drop-shadow(0 0 30px rgba(230,180,40,0.6))}}`}</style>
       </div>
 
       <div className="w-full max-w-[1700px] mx-auto">
@@ -196,8 +208,8 @@ export default function LayerGreedy() {
                 const color = top ? '#10b981' : GREY
                 const pct = Math.round((c.count / maxCount) * 100)   // ring fill, relative to #1
                 return (
-                  <div key={c.name} className="flex items-center h-[66px] flex-shrink-0 cursor-default group w-full">
-                    <div className="w-[60px] h-[60px] flex-shrink-0 flex items-center justify-center select-none relative z-10">
+                  <div key={c.name} className="flex items-center flex-shrink-0 cursor-default group w-full" style={{ height: rowH }}>
+                    <div className="flex-shrink-0 flex items-center justify-center select-none relative z-10" style={{ width: coinSize, height: coinSize }}>
                       <svg className="w-full h-full" viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="48" fill="#321609" className="transition-colors duration-300 group-hover:fill-[#3D1E0A]" />
                         <g transform="rotate(-90 50 50)">
@@ -209,12 +221,17 @@ export default function LayerGreedy() {
                         <text x="50" y="58" textAnchor="middle" fill="#ffffff" fontSize="26" fontWeight="bold" fontFamily="system-ui,-apple-system,sans-serif">{c.count}</text>
                       </svg>
                     </div>
-                    <div className="relative overflow-hidden flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
-                      <img src={c.icon} alt="" aria-hidden className="absolute right-2 top-1/2 -translate-y-1/2 h-[64px] w-[64px] object-contain opacity-90 pointer-events-none select-none" />
+                    <div className={`relative overflow-hidden flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]${top ? ' border-[2px]' : ''}`}
+                      style={{
+                        borderColor: color,
+                        paddingRight: iconSize + 10,
+                        ...(top ? { animation: 'rankBorderPulse 1.5s ease-in-out infinite', boxShadow: `0 0 8px ${color}88` } : {}),
+                      }}>
+                      <img src={c.icon} alt="" aria-hidden className="absolute right-2 top-1/2 -translate-y-1/2 object-contain opacity-90 pointer-events-none select-none" style={{ height: iconSize, width: iconSize }} />
                       <div className="relative z-10 flex flex-col justify-center select-none min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[12px] font-black flex-shrink-0" style={{ color }}>#{i + 1}</span>
-                          <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>{c.name}</span>
+                          <span className="text-[11px] font-bold tracking-wide leading-snug break-words" style={{ color, textShadow: `0 0 8px ${color}80` }}>{c.name}</span>
                         </div>
                         <span className="text-[9px] font-semibold tracking-wide mt-0.5" style={{ color: `${color}cc` }}>{c.count.toLocaleString()} ครั้ง</span>
                       </div>
@@ -226,13 +243,13 @@ export default function LayerGreedy() {
           </div>
 
           {/* COL 2: Gauge */}
-          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 hover:border-[#E6B428]">
+          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 hover:border-[#E6B428] h-[260px] md:h-0 md:min-h-full">
             <div className="w-full text-left">
               <h2 className="text-xs font-bold text-gray-300 tracking-wider">ชั่วโมงการใช้งาน</h2>
             </div>
 
             <div className="relative w-full flex flex-col items-center">
-              <svg className="w-full max-w-[280px]" viewBox="0 0 200 130">
+              <svg className="w-full max-w-[180px] sm:max-w-[280px]" viewBox="0 0 200 130">
                 <defs>
                   <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#10b981" />
@@ -280,15 +297,15 @@ export default function LayerGreedy() {
           </div>
 
           {/* COL 3: sports-style award podium (อันดับ 1–5) — far-right column */}
-          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 md:p-1 flex flex-col transition-all duration-300 hover:border-[#E6B428]" style={{ maxWidth: '100%' }}>
+          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 md:p-1 flex flex-col transition-all duration-300 hover:border-[#E6B428] h-[260px] md:h-0 md:min-h-full" style={{ maxWidth: '100%' }}>
             <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-1 flex-shrink-0" style={{ fontSize: deviceSize === 'tablet' ? '10px' : '12px' }}>อันดับการใช้งาน</h2>
             <div className="flex-1 min-h-0 flex items-end justify-center gap-0 pt-1" style={{ overflow: 'visible' }}>
               {[
-                { rank: 4, h: 46, hTablet: 16, hMobile: 16 },
-                { rank: 2, h: 60, hTablet: 20, hMobile: 20 },
-                { rank: 1, h: 100, hTablet: 36, hMobile: 36 },
-                { rank: 3, h: 50, hTablet: 18, hMobile: 18 },
-                { rank: 5, h: 38, hTablet: 13, hMobile: 14 },
+                { rank: 4, h: 46, hTablet: 16, hMobile: 46 },
+                { rank: 2, h: 60, hTablet: 20, hMobile: 60 },
+                { rank: 1, h: 100, hTablet: 36, hMobile: 100 },
+                { rank: 3, h: 50, hTablet: 18, hMobile: 50 },
+                { rank: 5, h: 38, hTablet: 13, hMobile: 38 },
               ].map(({ rank, h, hTablet, hMobile }) => {
                 const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
                         : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
@@ -296,7 +313,12 @@ export default function LayerGreedy() {
                         :              ['#6b5a44', '#473726', '#2c2216']
                 const animSprite = rank === 1 ? CAPULIONWIN : rank === 2 ? WOLFLICANOLOSE : rank === 3 ? CATRAMELLOSE : rank === 4 ? BEARTELOSE : rank === 5 ? FOXCALOSE : null
                 const frame = animSprite ? useSpriteFrame(animSprite) : 0
-                const charSize = deviceSize === 'desktop' ? 90 : deviceSize === 'tablet' ? 16 : 35
+                /* on phones, fit the sprite to the real column width so the 5
+                   characters never get squeezed/overlap: usable width = viewport
+                   minus page(16) + card(40) + podium(32) padding, split 5 ways,
+                   leaving a small gap — clamped to a sane 36–54px range */
+                const mobileChar = Math.max(36, Math.min(54, Math.floor((vw - 88) / 5) - 6))
+                const charSize = deviceSize === 'desktop' ? 90 : deviceSize === 'tablet' ? 16 : mobileChar
                 const pedestalHeight = deviceSize === 'desktop' ? h : deviceSize === 'tablet' ? hTablet : hMobile
                 return (
                   <div key={rank} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full" style={{ marginRight: deviceSize === 'tablet' ? '-1px' : '0' }}>
@@ -369,8 +391,9 @@ export default function LayerGreedy() {
           {/* lanes ordered by the ranking — #1 runs out in front */}
           <div className="flex flex-col gap-2">
             {ranked.map((c, i) => (
-              <div key={c.name} className="relative h-[110px] rounded-lg overflow-hidden border border-[#4A2A10]"
+              <div key={c.name} className="relative rounded-lg overflow-hidden border border-[#4A2A10]"
                 style={{
+                  height: laneH,
                   backgroundImage: `url("${RUN_SCENE}")`,
                   backgroundSize: 'cover',
                   backgroundPosition: SCENE_POS,
@@ -378,11 +401,17 @@ export default function LayerGreedy() {
                 }}>
                 {/* trophy at the finish line (right end) */}
                 <img src={CUP_URL} alt="" aria-hidden
-                  className="absolute right-2 bottom-1 h-[84px] w-auto pointer-events-none select-none z-10"
-                  style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))' }} />
+                  className="absolute bottom-1 w-auto pointer-events-none select-none z-10"
+                  style={{
+                    height: cupH,
+                    right: isMobile ? 4 : 8,
+                    filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(230,180,40,0.7))',
+                    animation: 'cupFloat 2.4s ease-in-out infinite',
+                    transformOrigin: 'bottom center',
+                  }} />
                 {/* run in place at a position = usage relative to #1 (#1 = end of lane) */}
-                <SpriteMarker sprite={c.sprite} height={115} bottom={6}
-                  left={Math.max(5, (c.count / maxCount) * 80)} />
+                <SpriteMarker sprite={c.sprite} height={spriteH} bottom={6}
+                  left={Math.max(5, (c.count / maxCount) * (isMobile ? 55 : 80))} />
               </div>
             ))}
           </div>
@@ -390,7 +419,7 @@ export default function LayerGreedy() {
 
       </div>
       </div>
-      </div>
+    </div>
     </div>
   );
 }
