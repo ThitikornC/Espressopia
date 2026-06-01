@@ -2,23 +2,22 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MATCHIKATREE } from './sprites.jsx'
 
-function MatchikatreeSprite({ size = 180, style = {} }) {
-  const s = MATCHIKATREE
-  const total = s.cols * s.rows
+function SpriteAnim({ sprite, size, style = {} }) {
+  const total = sprite.cols * sprite.rows
   const [frame, setFrame] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => setFrame(f => (f + 1) % total), 1000 / s.fps)
+    const id = setInterval(() => setFrame(f => (f + 1) % total), 1000 / sprite.fps)
     return () => clearInterval(id)
-  }, [total, s.fps])
-  const col = frame % s.cols
-  const row = Math.floor(frame / s.cols)
+  }, [total, sprite.fps])
+  const col = frame % sprite.cols
+  const row = Math.floor(frame / sprite.cols)
   return (
     <div style={{
       width: size, height: size,
-      backgroundImage: `url("${s.url}")`,
+      backgroundImage: `url("${sprite.url}")`,
       backgroundRepeat: 'no-repeat',
-      backgroundSize: `${s.cols * 100}% ${s.rows * 100}%`,
-      backgroundPosition: `${(col / (s.cols - 1)) * 100}% ${(row / (s.rows - 1)) * 100}%`,
+      backgroundSize: `${sprite.cols * 100}% ${sprite.rows * 100}%`,
+      backgroundPosition: `${(col / (sprite.cols - 1)) * 100}% ${(row / (sprite.rows - 1)) * 100}%`,
       imageRendering: 'pixelated',
       pointerEvents: 'none',
       ...style,
@@ -26,11 +25,83 @@ function MatchikatreeSprite({ size = 180, style = {} }) {
   )
 }
 
+function SpriteAnimPingPong({ sprite, size, style = {} }) {
+  const total = sprite.cols * sprite.rows
+  const [frame, setFrame] = useState(0)
+  const dirRef = useRef(1)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFrame(f => {
+        const next = f + dirRef.current
+        if (next >= total - 1) dirRef.current = -1
+        if (next <= 0) dirRef.current = 1
+        return next
+      })
+    }, 1000 / sprite.fps)
+    return () => clearInterval(id)
+  }, [total, sprite.fps])
+  const col = frame % sprite.cols
+  const row = Math.floor(frame / sprite.cols)
+  return (
+    <div style={{
+      width: size, height: size,
+      backgroundImage: `url("${sprite.url}")`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: `${sprite.cols * 100}% ${sprite.rows * 100}%`,
+      backgroundPosition: `${(col / (sprite.cols - 1)) * 100}% ${(row / (sprite.rows - 1)) * 100}%`,
+      imageRendering: 'pixelated',
+      pointerEvents: 'none',
+      ...style,
+    }} />
+  )
+}
+
+function MatchikatreeSprite({ size = 180, style = {} }) {
+  return <SpriteAnim sprite={MATCHIKATREE} size={size} style={style} />
+}
+
 const BASE     = import.meta.env.BASE_URL || '/'
 const IMG_DIR  = `${BASE}assets/Espresso/Espresso/`
 const TILE_DIR = `${IMG_DIR}opt/`                 // downscaled tiles (small files)
 const BG_URL   = `${TILE_DIR}BG.jpg`
 const BG_H_URL = `${TILE_DIR}BG_H.jpg`
+
+const BEARTESTANDING = {
+  url: `${IMG_DIR}Beartestanding.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const FOXCAMUSIC = {
+  url: `${IMG_DIR}Foxcamusic.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const CATRAMELPOST = {
+  url: `${IMG_DIR}Catramelpost.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const CAPULIONCOFFEE = {
+  url: `${IMG_DIR}Capulioncoffee.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const WOLFLICANOPOST = {
+  url: `${IMG_DIR}Wolflicanopost.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const OLIANGPHANTMAP = {
+  url: `${IMG_DIR}Oliangphantmap.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const FLAMINGSHAKEMOVIE = {
+  url: `${IMG_DIR}Flamingshakemovie.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const PENGURTCAKE = {
+  url: `${IMG_DIR}Pengurtcake.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
+const THAIGERFIX = {
+  url: `${IMG_DIR}Thaigerfix.webp`,
+  cols: 5, rows: 5, fps: 16,
+}
 const BGM_URL  = `${BASE}assets/Espresso/MorningWalk.m4a`
 
 /* ─── Scale derived from assembled image (Group 30.png = 17324×13436 px) ───
@@ -343,8 +414,12 @@ export default function Espressopia() {
             transformOrigin:'top left',
           }}>
             <style>{`
-              .town-plaque { transition: transform .18s ease; }
-              .town-plaque:hover { transform: translate(-50%,-50%) scale(1.06); }
+              @keyframes plaqueBob {
+                0%,100% { transform: translate(-50%,-50%) translateY(0px); }
+                50%     { transform: translate(-50%,-50%) translateY(-5px); }
+              }
+              .town-plaque { animation: plaqueBob 2.5s ease-in-out infinite; }
+              .town-plaque:hover { animation: none; transform: translate(-50%,-50%) scale(1.08); }
               .town-plaque:hover .town-plaque-ring { box-shadow: 0 8px 22px rgba(0,0,0,0.6), 0 0 20px rgba(230,180,40,0.5); }
             `}</style>
             {tiles.map(t => {
@@ -382,12 +457,94 @@ export default function Espressopia() {
                     decoding="async"
                     style={{ width:'100%', height:'100%', display:'block', pointerEvents:'none', userSelect:'none' }}
                   />
+                  {t.id === 'bar' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'8%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={BEARTESTANDING} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'shop' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'18%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={CATRAMELPOST} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'center' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'30%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={FOXCAMUSIC} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'workshop' && (
+                    <div style={{
+                      position:'absolute', bottom:'20%', left:'15%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={THAIGERFIX} size={120} />
+                    </div>
+                  )}
+                  {t.id === 'vilage' && (
+                    <div style={{
+                      position:'absolute', bottom:'12%', left:'30%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={PENGURTCAKE} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'cinema' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'30%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={FLAMINGSHAKEMOVIE} size={120} />
+                    </div>
+                  )}
+                  {t.id === 'temple' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'30%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnimPingPong sprite={OLIANGPHANTMAP} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'hotel' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'18%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                    }}>
+                      <SpriteAnim sprite={WOLFLICANOPOST} size={100} />
+                    </div>
+                  )}
+                  {t.id === 'campus' && (
+                    <div style={{
+                      position:'absolute', bottom:'22%', left:'30%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                      zIndex: 10,
+                      transform:'scaleX(-1)',
+                    }}>
+                      <SpriteAnim sprite={CAPULIONCOFFEE} size={100} />
+                    </div>
+                  )}
                   {t.id === 'garden' && (
                     <div style={{
-                      position:'absolute', bottom:'18%', left:'28%',
+                      position:'absolute', bottom:'30%', right:'5%',
                       filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
                     }}>
-                      <MatchikatreeSprite size={160} />
+                      <MatchikatreeSprite size={110} />
                     </div>
                   )}
 
