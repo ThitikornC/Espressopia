@@ -5,7 +5,7 @@ import { BEAR, WOLF, FOX, CAPULION, CAT, CAPULIONWIN, CATRAMELLOSE, WOLFLICANOLO
 
 /* Same parchment map + warm vignette backdrop as the Espressopia landing page */
 const BASE   = import.meta.env.BASE_URL || '/'
-const BG_URL = `${BASE}assets/Espresso/Espresso/opt/BG.png`
+const BG_URL = `${BASE}assets/Espresso/Espresso/opt/BG.jpg`
 const PAGE_BG = {
   backgroundColor: '#2D1008',
   backgroundImage: [
@@ -27,7 +27,7 @@ const RUN_SCENE = `${BASE}assets/Espresso/Espresso/opt/RunBG_full.jpg`
    100% = ground at the very bottom · lower numbers reveal more of the upper
    scene (wall → buildings → sky). Tweak this one value to reframe all lanes. */
 const SCENE_POS = 'center 90%'
-const CUP_URL   = `${BASE}assets/Espresso/Espresso/opt/CUP.png`   // trophy at each finish line
+const CUP_URL   = `${BASE}assets/Espresso/Espresso/opt/CUP.webp`
 
 const ICON_DIR = `${BASE}assets/Espresso/Espresso/Espresso_icon/opt/`
 const GREY = '#8a8175'
@@ -36,11 +36,11 @@ const GREY = '#8a8175'
    list and the running lanes are ranked by it (most-used first), and each
    centre owns one character (sprite for the run, coin icon for the list). */
 const CENTERS = [
-  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', count: 124, sprite: BEAR,     icon: `${ICON_DIR}Bearte_icon.png` },
-  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', count: 201, sprite: CAPULION, icon: `${ICON_DIR}Capulion_icon.png` },
-  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     count: 156, sprite: CAT,      icon: `${ICON_DIR}Catramel_icon.png` },
-  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     count: 98,  sprite: FOX,      icon: `${ICON_DIR}Foxca_icon.png` },
-  { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  count: 172, sprite: WOLF,     icon: `${ICON_DIR}Wolficano_icon.png` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', count: 124, sprite: BEAR,     icon: `${ICON_DIR}Bearte_icon.webp` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', count: 201, sprite: CAPULION, icon: `${ICON_DIR}Capulion_icon.webp` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     count: 156, sprite: CAT,      icon: `${ICON_DIR}Catramel_icon.webp` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     count: 98,  sprite: FOX,      icon: `${ICON_DIR}Foxca_icon.webp` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  count: 172, sprite: WOLF,     icon: `${ICON_DIR}Wolficano_icon.webp` },
 ]
 
 /* ── Floor2 plan constants ──────────────────────────────────────────────── */

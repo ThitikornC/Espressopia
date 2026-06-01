@@ -9,7 +9,7 @@ const IMG_DIR = `${BASE}assets/Espresso/Espresso/`
    top of each cell) — the baseline drifts between frames, so we anchor every
    frame to the lowest foot line to keep the character planted (no bobbing). */
 export const BEAR = {
-  url: `${IMG_DIR}Bearte_Sprite.png`,
+  url: `${IMG_DIR}Bearte_Sprite.webp`,
   cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
   feet: [
     218, 223, 233, 234, 233,
@@ -20,7 +20,7 @@ export const BEAR = {
   ],
 }
 export const WOLF = {
-  url: `${IMG_DIR}Wolflicano_Sprite.png`,
+  url: `${IMG_DIR}Wolflicano_Sprite.webp`,
   cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
   feet: [
     218, 217, 227, 242, 243,
@@ -31,7 +31,7 @@ export const WOLF = {
   ],
 }
 export const FOX = {
-  url: `${IMG_DIR}Foxca_Sprite.png`,
+  url: `${IMG_DIR}Foxca_Sprite.webp`,
   cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
   feet: [
     218, 223, 235, 234, 234,
@@ -42,7 +42,7 @@ export const FOX = {
   ],
 }
 export const CAPULION = {
-  url: `${IMG_DIR}Capulion_Sprite.png`,
+  url: `${IMG_DIR}Capulion_Sprite.webp`,
   cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
   feet: [
     220, 215, 228, 235, 233,
@@ -53,7 +53,7 @@ export const CAPULION = {
   ],
 }
 export const CAT = {
-  url: `${IMG_DIR}Catramel_Sprite.png`,
+  url: `${IMG_DIR}Catramel_Sprite.webp`,
   cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
   feet: [
     214, 217, 239, 238, 215,
@@ -65,31 +65,31 @@ export const CAT = {
 }
 
 export const CAPULIONWIN = {
-  url: `${IMG_DIR}Capulionwin.png`,
+  url: `${IMG_DIR}Capulionwin.webp`,
   cols: 7, rows: 7, fw: 512, fh: 512, fps: 50,
   feet: Array(49).fill(512),
 }
 
 export const CATRAMELLOSE = {
-  url: `${IMG_DIR}Catramellose.png`,
+  url: `${IMG_DIR}Catramellose.webp`,
   cols: 7, rows: 7, fw: 512, fh: 512, fps: 50,
   feet: Array(49).fill(512),
 }
 
 export const WOLFLICANOLOSE = {
-  url: `${IMG_DIR}Wolflicanolose.png`,
+  url: `${IMG_DIR}Wolflicanolose.webp`,
   cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
   feet: Array(25).fill(512),
 }
 
 export const FOXCALOSE = {
-  url: `${IMG_DIR}Foxcalose.png`,
+  url: `${IMG_DIR}Foxcalose.webp`,
   cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
   feet: Array(25).fill(512),
 }
 
 export const BEARTELOSE = {
-  url: `${IMG_DIR}Beartelose.png`,
+  url: `${IMG_DIR}Beartelose.webp`,
   cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
   feet: Array(25).fill(512),
 }
@@ -100,7 +100,7 @@ export const SPRITES = [BEAR, WOLF, FOX, CAPULION, CAT]
    The sheet is a 5×5 grid, but the last frames (14…24) sprout a lion in the
    middle — we stop at `last` so the intro ends on the gathered group. */
 export const INTRO = {
-  url: `${IMG_DIR}actopen-iso_jump_down-v1.png`,
+  url: `${IMG_DIR}actopen-iso_jump_down-v1.webp`,
   cols: 5, rows: 5, fps: 12,
   first: 0, last: 13,
 }
