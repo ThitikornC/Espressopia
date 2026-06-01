@@ -25,19 +25,13 @@ const FLOOR2_KEY = 'floor2_zones'
 const PREVIEW_CAM1_KEY = 'preview_cam1_id'
 const CAM1_CAPACITY = 50
 
+/* 4 standby cameras shown in grey beneath the live (green) camera 1 */
+const GREY = '#8a8175'
 const MOCK_CAMS = [
-  { id: '2',  label: 'กล้อง 2',  pct: 45 },
-  { id: '3',  label: 'กล้อง 3',  pct: 72 },
-  { id: '4',  label: 'กล้อง 4',  pct: 30 },
-  { id: '5',  label: 'กล้อง 5',  pct: 88 },
-  { id: '6',  label: 'กล้อง 6',  pct: 55 },
-  { id: '7',  label: 'กล้อง 7',  pct: 19 },
-  { id: '8',  label: 'กล้อง 8',  pct: 63 },
-  { id: '9',  label: 'กล้อง 9',  pct: 41 },
-  { id: '10', label: 'กล้อง 10', pct: 77 },
-  { id: '11', label: 'กล้อง 11', pct: 93 },
-  { id: '12', label: 'กล้อง 12', pct: 36 },
-  { id: '13', label: 'กล้อง 13', pct: 58 },
+  { id: '2', label: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', pct: 45 },
+  { id: '3', label: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1', pct: 72 },
+  { id: '4', label: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2', pct: 30 },
+  { id: '5', label: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม', pct: 88 },
 ]
 
 function camColor(pct) {
@@ -145,13 +139,9 @@ export default function LayerGreedy() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-extrabold tracking-wider text-white flex flex-wrap items-baseline gap-1.5">
-              <span className="whitespace-nowrap">LAYER 1: GREEDY</span>
-              <span className="text-gray-400 font-medium text-xs whitespace-nowrap">(REAL-TIME DECISION)</span>
+              <span className="whitespace-nowrap">เทศบาลตำบลหัวรอ</span>
             </h1>
-            <p className="text-[10px] text-[#B89A6A] font-light mt-0.5">
-              เลือกสิ่งที่ดีที่สุด ณ เวลาปัจจุบัน เพื่อการตอบสนองและแจ้งเตือนทันที
-            </p>
-          </div>
+                  </div>
           </div>
         </div>
 
@@ -161,17 +151,17 @@ export default function LayerGreedy() {
           {/* COL 1: Camera density list */}
           <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col h-[260px] md:h-0 md:min-h-full overflow-hidden transition-all duration-300 hover:border-[#E6B428]">
             <div className="flex justify-between items-center mb-3 flex-shrink-0">
-              <h2 className="text-xs font-bold text-gray-300 tracking-wider">ความหนาแน่นของโซน</h2>
+              <h2 className="text-xs font-bold text-gray-300 tracking-wider">จำนวนครั้งที่ใช้งาน</h2>
               <div className={`w-1.5 h-1.5 rounded-full bg-[#E6B428] ${pulse ? 'animate-pulse' : ''}`} />
             </div>
 
             <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
-              {/* Camera 1 — Real API */}
+              {/* Camera 1 — Real API (always shown green = the active one) */}
               {(() => {
                 const pct = cam1Pct
-                const color = camColor(pct)
+                const color = '#10b981'
                 const live = !!cam1Id && !!apiBase
                 return (
                   <div className="flex items-center h-[52px] cursor-default group w-full">
@@ -190,21 +180,18 @@ export default function LayerGreedy() {
                     <div className="flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
                       <div className="flex flex-col justify-center select-none min-w-0">
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>กล้อง 1</span>
+                          <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1</span>
                           {live && <span className="text-[7px] bg-[#E6B428]/20 text-[#E6B428] px-1 py-0.5 rounded font-bold tracking-wider flex-shrink-0">LIVE</span>}
                         </div>
-                        <span className="text-[9px] font-semibold tracking-wide leading-snug mt-0.5 truncate" style={{ color: `${color}cc` }}>
-                          {camLabel(pct)}{cam1Count > 0 ? ` · ${cam1Count} คน` : ''}
-                        </span>
                       </div>
                     </div>
                   </div>
                 )
               })()}
 
-              {/* Cameras 2–13 — Mock */}
+              {/* Cameras 2–5 — standby (grey) */}
               {MOCK_CAMS.map(cam => {
-                const color = camColor(cam.pct)
+                const color = GREY
                 return (
                   <div key={cam.id} className="flex items-center h-[52px] cursor-default group w-full">
                     <div className="w-[56px] h-[56px] flex-shrink-0 flex items-center justify-center select-none relative z-10">
@@ -222,7 +209,6 @@ export default function LayerGreedy() {
                     <div className="flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
                       <div className="flex flex-col justify-center select-none min-w-0">
                         <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>{cam.label}</span>
-                        <span className="text-[9px] font-semibold tracking-wide leading-snug mt-0.5 truncate" style={{ color: `${color}cc` }}>{camLabel(cam.pct)}</span>
                       </div>
                     </div>
                   </div>
@@ -234,7 +220,7 @@ export default function LayerGreedy() {
           {/* COL 2: Gauge */}
           <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 hover:border-[#E6B428]">
             <div className="w-full text-left">
-              <h2 className="text-xs font-bold text-gray-300 tracking-wider">ระดับความหนาแน่น</h2>
+              <h2 className="text-xs font-bold text-gray-300 tracking-wider">ชั่วโมงการใช้งาน</h2>
             </div>
 
             <div className="relative w-full flex flex-col items-center">
@@ -270,7 +256,7 @@ export default function LayerGreedy() {
               </svg>
               <p className="text-3xl lg:text-5xl font-black leading-none mt-2 lg:mt-1"
                 style={{ color: gaugeColor, textShadow: `0 0 20px ${gaugeColor}b3, 0 0 40px ${gaugeColor}59` }}>{gaugeScore}</p>
-              <p className="text-[13px] lg:text-[18px] font-bold tracking-wide lg:tracking-[3px] mt-1.5 lg:mt-0.5" style={{ color: gaugeColor }}>{gaugeLabel}</p>
+              <p className="text-[13px] lg:text-[18px] font-bold tracking-wide lg:tracking-[3px] mt-1.5 lg:mt-0.5" style={{ color: gaugeColor }}>ชั่วโมง</p>
             </div>
 
             {isCritical && (
