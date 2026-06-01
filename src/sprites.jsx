@@ -94,6 +94,11 @@ export const BEARTELOSE = {
   feet: Array(25).fill(512),
 }
 
+export const MATCHIKATREE = {
+  url: `${IMG_DIR}Matchikatree.webp`,
+  cols: 5, rows: 5, fw: 256, fh: 256, fps: 16,
+}
+
 export const SPRITES = [BEAR, WOLF, FOX, CAPULION, CAT]
 
 /* Opening animation: the whole crew jumps down together (isometric).

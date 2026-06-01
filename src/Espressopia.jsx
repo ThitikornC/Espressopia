@@ -1,5 +1,30 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MATCHIKATREE } from './sprites.jsx'
+
+function MatchikatreeSprite({ size = 180, style = {} }) {
+  const s = MATCHIKATREE
+  const total = s.cols * s.rows
+  const [frame, setFrame] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setFrame(f => (f + 1) % total), 1000 / s.fps)
+    return () => clearInterval(id)
+  }, [total, s.fps])
+  const col = frame % s.cols
+  const row = Math.floor(frame / s.cols)
+  return (
+    <div style={{
+      width: size, height: size,
+      backgroundImage: `url("${s.url}")`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: `${s.cols * 100}% ${s.rows * 100}%`,
+      backgroundPosition: `${(col / (s.cols - 1)) * 100}% ${(row / (s.rows - 1)) * 100}%`,
+      imageRendering: 'pixelated',
+      pointerEvents: 'none',
+      ...style,
+    }} />
+  )
+}
 
 const BASE     = import.meta.env.BASE_URL || '/'
 const IMG_DIR  = `${BASE}assets/Espresso/Espresso/`
@@ -357,6 +382,14 @@ export default function Espressopia() {
                     decoding="async"
                     style={{ width:'100%', height:'100%', display:'block', pointerEvents:'none', userSelect:'none' }}
                   />
+                  {t.id === 'garden' && (
+                    <div style={{
+                      position:'absolute', bottom:'18%', left:'28%',
+                      filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                    }}>
+                      <MatchikatreeSprite size={160} />
+                    </div>
+                  )}
 
                   {/* Name plaque living inside the Bar tile → /Huaroi dashboard */}
                   {t.id === 'bar' && (
