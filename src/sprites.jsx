@@ -271,3 +271,15 @@ export function SpriteLane({ sprite, height = 30, speed = 22, startPos = 0, bott
     }}/>
   )
 }
+
+/* ─── Marker: runs in place at a fixed % along the lane (rank/progress view) ─── */
+export function SpriteMarker({ sprite, height = 100, left = 50, bottom = 0 }) {
+  const frame = useSpriteFrame(sprite)
+  return (
+    <div style={{
+      position: 'absolute', bottom, left: `${left}%`,
+      ...frameStyle(sprite, frame, height, 1),
+      filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.55))',
+    }}/>
+  )
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Zap, ArrowUpRight } from 'lucide-react';
-import { BEAR, WOLF, FOX, CAPULION, CAT, SpriteLane } from './sprites.jsx';
+import { BEAR, WOLF, FOX, CAPULION, CAT, SpriteMarker } from './sprites.jsx';
 
 /* Same parchment map + warm vignette backdrop as the Espressopia landing page */
 const BASE   = import.meta.env.BASE_URL || '/'
@@ -27,27 +27,26 @@ const RUN_SCENE = `${BASE}assets/Espresso/Espresso/opt/RunBG_full.jpg`
    100% = ground at the very bottom · lower numbers reveal more of the upper
    scene (wall → buildings → sky). Tweak this one value to reframe all lanes. */
 const SCENE_POS = 'center 90%'
-const RUNNERS = [
-  { sprite: BEAR,     scene: RUN_SCENE, height: 115, speed: 10, startPos: 8  },
-  { sprite: CAPULION, scene: RUN_SCENE, height: 115, speed: 10, startPos: 34 },
-  { sprite: WOLF,     scene: RUN_SCENE, height: 115, speed: 10, startPos: 58 },
-  { sprite: CAT,      scene: RUN_SCENE, height: 115, speed: 10, startPos: 72 },
-  { sprite: FOX,      scene: RUN_SCENE, height: 115, speed: 10, startPos: 46 },
+const CUP_URL   = `${BASE}assets/Espresso/Espresso/opt/CUP.png`   // trophy at each finish line
+
+const ICON_DIR = `${BASE}assets/Espresso/Espresso/Espresso_icon/opt/`
+const GREY = '#8a8175'
+
+/* The five centres. `count` = how many times each was used; both the camera
+   list and the running lanes are ranked by it (most-used first), and each
+   centre owns one character (sprite for the run, coin icon for the list). */
+const CENTERS = [
+  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', count: 124, sprite: BEAR,     icon: `${ICON_DIR}Bearte_icon.png` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', count: 201, sprite: CAPULION, icon: `${ICON_DIR}Capulion_icon.png` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     count: 156, sprite: CAT,      icon: `${ICON_DIR}Catramel_icon.png` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     count: 98,  sprite: FOX,      icon: `${ICON_DIR}Foxca_icon.png` },
+  { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  count: 172, sprite: WOLF,     icon: `${ICON_DIR}Wolficano_icon.png` },
 ]
 
 /* ── Floor2 plan constants ──────────────────────────────────────────────── */
 const FLOOR2_KEY = 'floor2_zones'
 const PREVIEW_CAM1_KEY = 'preview_cam1_id'
 const CAM1_CAPACITY = 50
-
-/* 4 standby cameras shown in grey beneath the live (green) camera 1 */
-const GREY = '#8a8175'
-const MOCK_CAMS = [
-  { id: '2', label: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', pct: 45 },
-  { id: '3', label: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1', pct: 72 },
-  { id: '4', label: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2', pct: 30 },
-  { id: '5', label: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม', pct: 88 },
-]
 
 function camColor(pct) {
   if (pct >= 85) return '#ef4444'
@@ -110,6 +109,11 @@ export default function LayerGreedy() {
   const gaugeLabel  = gaugeScore >= 85 ? 'หนาแน่นมาก' : gaugeScore >= 70 ? 'หนาแน่น' : gaugeScore >= 40 ? 'เริ่มหนาแน่น' : 'ค่อนข้างว่าง'
   const isCritical  = gaugeScore >= 85
 
+  /* rank the centres by usage count (most-used first) — drives both the list
+     numbers and the order/lead of the running characters below */
+  const ranked = [...CENTERS].sort((a, b) => b.count - a.count)
+  const maxCount = ranked[0].count
+
   return (
     <div className="h-screen w-full overflow-y-auto select-none" style={PAGE_BG}>
     <div className="min-h-full w-full text-[#F2E4CC] font-sans px-2 py-6 sm:px-4 sm:py-8 md:px-6 md:py-8 flex flex-col justify-center">
@@ -135,7 +139,7 @@ export default function LayerGreedy() {
         <style>{`@keyframes rotateHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(15deg)}}`}</style>
       </div>
 
-      <div className="w-full max-w-[960px] mx-auto">
+      <div className="w-full max-w-[1700px] mx-auto">
       {/* Main card */}
       <div className="bg-[#2A1208] rounded-2xl border-2 border-solid border-[#C8982C] p-5 sm:p-6 shadow-[0_0_32px_rgba(200,152,44,0.4)] relative overflow-hidden flex flex-col">
 
@@ -160,8 +164,8 @@ export default function LayerGreedy() {
           </div>
         </div>
 
-        {/* MAIN 2 COLUMNS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 min-h-[330px]">
+        {/* MAIN 3 COLUMNS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 min-h-[360px]">
 
           {/* COL 1: Camera density list */}
           <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col h-[260px] md:h-0 md:min-h-full overflow-hidden transition-all duration-300 hover:border-[#E6B428]">
@@ -173,14 +177,14 @@ export default function LayerGreedy() {
             <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
-              {/* Camera 1 — Real API (always shown green = the active one) */}
-              {(() => {
-                const pct = cam1Pct
-                const color = '#10b981'
-                const live = !!cam1Id && !!apiBase
+              {/* Centres ranked by usage count — the number in the coin is the count */}
+              {ranked.map((c, i) => {
+                const top = i === 0
+                const color = top ? '#10b981' : GREY
+                const pct = Math.round((c.count / maxCount) * 100)   // ring fill, relative to #1
                 return (
-                  <div className="flex items-center h-[52px] cursor-default group w-full">
-                    <div className="w-[56px] h-[56px] flex-shrink-0 flex items-center justify-center select-none relative z-10">
+                  <div key={c.name} className="flex items-center h-[66px] flex-shrink-0 cursor-default group w-full">
+                    <div className="w-[60px] h-[60px] flex-shrink-0 flex items-center justify-center select-none relative z-10">
                       <svg className="w-full h-full" viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="48" fill="#321609" className="transition-colors duration-300 group-hover:fill-[#3D1E0A]" />
                         <g transform="rotate(-90 50 50)">
@@ -189,41 +193,17 @@ export default function LayerGreedy() {
                           <circle cx="50" cy="50" r="36" fill="none" stroke={pct >= 50 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="-113.1" />
                           <circle cx="50" cy="50" r="36" fill="none" stroke={pct >= 75 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="-169.65" />
                         </g>
-                        <text x="50" y="56" textAnchor="middle" fill="#ffffff" fontSize="15" fontWeight="bold" fontFamily="system-ui,-apple-system,sans-serif">{pct}%</text>
+                        <text x="50" y="58" textAnchor="middle" fill="#ffffff" fontSize="26" fontWeight="bold" fontFamily="system-ui,-apple-system,sans-serif">{c.count}</text>
                       </svg>
                     </div>
-                    <div className="flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
-                      <div className="flex flex-col justify-center select-none min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1</span>
-                          {live && <span className="text-[7px] bg-[#E6B428]/20 text-[#E6B428] px-1 py-0.5 rounded font-bold tracking-wider flex-shrink-0">LIVE</span>}
+                    <div className="relative overflow-hidden flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
+                      <img src={c.icon} alt="" aria-hidden className="absolute right-2 top-1/2 -translate-y-1/2 h-[64px] w-[64px] object-contain opacity-90 pointer-events-none select-none" />
+                      <div className="relative z-10 flex flex-col justify-center select-none min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[12px] font-black flex-shrink-0" style={{ color }}>#{i + 1}</span>
+                          <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>{c.name}</span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
-
-              {/* Cameras 2–5 — standby (grey) */}
-              {MOCK_CAMS.map(cam => {
-                const color = GREY
-                return (
-                  <div key={cam.id} className="flex items-center h-[52px] cursor-default group w-full">
-                    <div className="w-[56px] h-[56px] flex-shrink-0 flex items-center justify-center select-none relative z-10">
-                      <svg className="w-full h-full" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="48" fill="#321609" className="transition-colors duration-300 group-hover:fill-[#3D1E0A]" />
-                        <g transform="rotate(-90 50 50)">
-                          <circle cx="50" cy="50" r="36" fill="none" stroke={cam.pct > 0 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="0" />
-                          <circle cx="50" cy="50" r="36" fill="none" stroke={cam.pct >= 25 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="-56.55" />
-                          <circle cx="50" cy="50" r="36" fill="none" stroke={cam.pct >= 50 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="-113.1" />
-                          <circle cx="50" cy="50" r="36" fill="none" stroke={cam.pct >= 75 ? color : '#3A2410'} strokeWidth="8" strokeDasharray="52.55 173.64" strokeDashoffset="-169.65" />
-                        </g>
-                        <text x="50" y="56" textAnchor="middle" fill="#ffffff" fontSize="15" fontWeight="bold" fontFamily="system-ui,-apple-system,sans-serif">{cam.pct}%</text>
-                      </svg>
-                    </div>
-                    <div className="flex-1 flex items-center h-full -ml-7 bg-[#241005] border-t border-b border-r border-solid rounded-r-xl pr-3 pl-8 transition-all duration-300 group-hover:bg-[#3D1E0A]" style={{ borderColor: color }}>
-                      <div className="flex flex-col justify-center select-none min-w-0">
-                        <span className="text-[11px] font-bold tracking-wide leading-snug truncate" style={{ color, textShadow: `0 0 8px ${color}80` }}>{cam.label}</span>
+                        <span className="text-[9px] font-semibold tracking-wide mt-0.5" style={{ color: `${color}cc` }}>{c.count.toLocaleString()} ครั้ง</span>
                       </div>
                     </div>
                   </div>
@@ -283,11 +263,53 @@ export default function LayerGreedy() {
             )}
 
             <div className="flex items-center gap-1 text-xs lg:text-sm text-[rgb(242,228,204)] mt-1.5 lg:-mt-3">
-              <span>แนวโน้ม: เพิ่มขึ้น</span>
-              <span className="text-[#ef4444] font-bold flex items-center">
-                <ArrowUpRight size={14} className="stroke-[2.5]" />
-              </span>
             </div>
+          </div>
+
+          {/* COL 3: sports-style award podium (อันดับ 1–5) — far-right column */}
+          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col transition-all duration-300 hover:border-[#E6B428]">
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-2 flex-shrink-0">อันดับการใช้งาน</h2>
+            <div className="flex-1 min-h-0 flex items-end justify-center gap-1.5 pt-2">
+              {[
+                { rank: 4, h: 46 },
+                { rank: 2, h: 74 },
+                { rank: 1, h: 100 },
+                { rank: 3, h: 60 },
+                { rank: 5, h: 38 },
+              ].map(({ rank, h }) => {
+                const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
+                        : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
+                        : rank === 3 ? ['#F2B984', '#CD7F32', '#86491a']
+                        :              ['#6b5a44', '#473726', '#2c2216']
+                return (
+                  <div key={rank} className="flex-1 flex flex-col items-center justify-end h-full">
+                    {/* medal disc with the rank number */}
+                    <div className="rounded-full flex items-center justify-center font-black text-black mb-1 flex-shrink-0"
+                      style={{
+                        width: rank === 1 ? 38 : 30, height: rank === 1 ? 38 : 30,
+                        fontSize: rank === 1 ? 17 : 14,
+                        background: `radial-gradient(circle at 35% 30%, ${m[0]}, ${m[1]} 65%, ${m[2]})`,
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        boxShadow: `0 0 10px ${m[1]}66, 0 2px 4px rgba(0,0,0,0.5)`,
+                      }}>
+                      {rank}
+                    </div>
+                    {/* pedestal block */}
+                    <div className="w-full rounded-t-md relative"
+                      style={{
+                        height: `${h}%`,
+                        background: `linear-gradient(180deg, ${m[1]} 0%, ${m[2]} 100%)`,
+                        boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.3), inset 0 0 12px rgba(0,0,0,0.25)',
+                      }}>
+                      <span className="absolute top-1.5 left-1/2 -translate-x-1/2 text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        style={{ fontSize: rank === 1 ? 22 : 18 }}>{rank}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {/* podium floor */}
+            <div className="h-[4px] rounded-full bg-gradient-to-r from-transparent via-[#C8982C]/70 to-transparent flex-shrink-0" />
           </div>
 
         </div>
@@ -303,17 +325,23 @@ export default function LayerGreedy() {
             <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#C8982C]/40" />
           </div>
 
-          {/* each character runs on its own scene strip */}
+          {/* lanes ordered by the ranking — #1 runs out in front */}
           <div className="flex flex-col gap-2">
-            {RUNNERS.map((r, i) => (
-              <div key={i} className="relative h-[110px] rounded-lg overflow-hidden border border-[#4A2A10]"
+            {ranked.map((c, i) => (
+              <div key={c.name} className="relative h-[110px] rounded-lg overflow-hidden border border-[#4A2A10]"
                 style={{
-                  backgroundImage: `url("${r.scene}")`,
+                  backgroundImage: `url("${RUN_SCENE}")`,
                   backgroundSize: 'cover',
                   backgroundPosition: SCENE_POS,
                   backgroundRepeat: 'no-repeat',
                 }}>
-                <SpriteLane sprite={r.sprite} height={r.height} speed={r.speed} startPos={r.startPos} bottom={6} />
+                {/* trophy at the finish line (right end) */}
+                <img src={CUP_URL} alt="" aria-hidden
+                  className="absolute right-2 bottom-1 h-[84px] w-auto pointer-events-none select-none z-10"
+                  style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))' }} />
+                {/* run in place at a position = usage relative to #1 (#1 = end of lane) */}
+                <SpriteMarker sprite={c.sprite} height={115} bottom={6}
+                  left={Math.max(5, (c.count / maxCount) * 80)} />
               </div>
             ))}
           </div>
