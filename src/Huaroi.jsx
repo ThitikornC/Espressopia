@@ -20,6 +20,21 @@ const PAGE_BG = {
   backgroundRepeat: 'no-repeat',
 }
 
+/* Each runner gets its own scene strip — swap `scene` per character to give
+   them different backdrops (defaults to the shared RunBG for now). */
+const RUN_SCENE = `${BASE}assets/Espresso/Espresso/opt/RunBG_full.jpg`
+/* Vertical crop position of the scene inside each lane:
+   100% = ground at the very bottom · lower numbers reveal more of the upper
+   scene (wall → buildings → sky). Tweak this one value to reframe all lanes. */
+const SCENE_POS = 'center 90%'
+const RUNNERS = [
+  { sprite: BEAR,     scene: RUN_SCENE, height: 115, speed: 10, startPos: 8  },
+  { sprite: CAPULION, scene: RUN_SCENE, height: 115, speed: 10, startPos: 34 },
+  { sprite: WOLF,     scene: RUN_SCENE, height: 115, speed: 10, startPos: 58 },
+  { sprite: CAT,      scene: RUN_SCENE, height: 115, speed: 10, startPos: 72 },
+  { sprite: FOX,      scene: RUN_SCENE, height: 115, speed: 10, startPos: 46 },
+]
+
 /* ── Floor2 plan constants ──────────────────────────────────────────────── */
 const FLOOR2_KEY = 'floor2_zones'
 const PREVIEW_CAM1_KEY = 'preview_cam1_id'
@@ -283,38 +298,24 @@ export default function LayerGreedy() {
             <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#C8982C]/40" />
             <h3 className="text-[9px] lg:text-xs font-bold text-[#C8982C] tracking-[0.15em] lg:tracking-[0.25em] uppercase text-center flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-[#C8982C] animate-pulse" />
-              ESPRESSO TOWN · RUSH HOUR
+              ESPRESSOPHIA · Marathon
             </h3>
             <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#C8982C]/40" />
           </div>
 
-          {/* street scene */}
-          <div className="relative h-[150px] rounded-lg overflow-hidden border border-[#4A2A10]"
-            style={{ background: 'radial-gradient(130% 100% at 50% 115%, #4A2410 0%, #2A1208 45%, #160800 100%)' }}>
-
-            {/* warm glow blobs for atmosphere */}
-            <div className="absolute -top-10 left-[15%] w-40 h-40 bg-[#E6B428]/10 rounded-full blur-[60px] pointer-events-none" />
-            <div className="absolute -top-8 right-[20%] w-36 h-36 bg-[#E0852A]/10 rounded-full blur-[55px] pointer-events-none" />
-
-            {/* distant ground line */}
-            <div className="absolute left-0 right-0" style={{ bottom: 46 }}>
-              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#C8982C]/25 to-transparent" />
-            </div>
-
-            {/* street */}
-            <div className="absolute left-0 right-0 bottom-0 h-[40px]"
-              style={{ background: 'linear-gradient(180deg, #321609 0%, #1C0B03 100%)', boxShadow: 'inset 0 2px 0 rgba(200,152,44,0.35)' }}>
-              {/* dashed center line of the road */}
-              <div className="absolute left-0 right-0 top-[20px] h-[2px]"
-                style={{ backgroundImage: 'repeating-linear-gradient(90deg, rgba(200,152,44,0.45) 0 18px, transparent 18px 40px)' }} />
-            </div>
-
-            {/* runners — bigger up front, smaller & faded toward the back (parallax) */}
-            <SpriteLane sprite={FOX}      height={56} speed={26} startPos={20} bottom={58} opacity={0.85} />
-            <SpriteLane sprite={CAT}      height={64} speed={22} startPos={78} bottom={50} opacity={0.9} />
-            <SpriteLane sprite={WOLF}     height={76} speed={19} startPos={42} bottom={40} opacity={0.96} />
-            <SpriteLane sprite={CAPULION} height={88} speed={16} startPos={62} bottom={26} />
-            <SpriteLane sprite={BEAR}     height={98} speed={13} startPos={8}  bottom={18} />
+          {/* each character runs on its own scene strip */}
+          <div className="flex flex-col gap-2">
+            {RUNNERS.map((r, i) => (
+              <div key={i} className="relative h-[110px] rounded-lg overflow-hidden border border-[#4A2A10]"
+                style={{
+                  backgroundImage: `url("${r.scene}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: SCENE_POS,
+                  backgroundRepeat: 'no-repeat',
+                }}>
+                <SpriteLane sprite={r.sprite} height={r.height} speed={r.speed} startPos={r.startPos} bottom={6} />
+              </div>
+            ))}
           </div>
         </div>
 
