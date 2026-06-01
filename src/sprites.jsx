@@ -64,6 +64,36 @@ export const CAT = {
   ],
 }
 
+export const CAPULIONWIN = {
+  url: `${IMG_DIR}Capulionwin.png`,
+  cols: 7, rows: 7, fw: 512, fh: 512, fps: 50,
+  feet: Array(49).fill(512),
+}
+
+export const CATRAMELLOSE = {
+  url: `${IMG_DIR}Catramellose.png`,
+  cols: 7, rows: 7, fw: 512, fh: 512, fps: 50,
+  feet: Array(49).fill(512),
+}
+
+export const WOLFLICANOLOSE = {
+  url: `${IMG_DIR}Wolflicanolose.png`,
+  cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
+  feet: Array(25).fill(512),
+}
+
+export const FOXCALOSE = {
+  url: `${IMG_DIR}Foxcalose.png`,
+  cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
+  feet: Array(25).fill(512),
+}
+
+export const BEARTELOSE = {
+  url: `${IMG_DIR}Beartelose.png`,
+  cols: 5, rows: 5, fw: 512, fh: 512, fps: 25,
+  feet: Array(25).fill(512),
+}
+
 export const SPRITES = [BEAR, WOLF, FOX, CAPULION, CAT]
 
 /* Opening animation: the whole crew jumps down together (isometric).
@@ -76,7 +106,7 @@ export const INTRO = {
 }
 
 /* Advance the animation frame at the sprite's fps (shared by both views). */
-function useSpriteFrame(sprite) {
+export function useSpriteFrame(sprite) {
   const frames = sprite.cols * sprite.rows
   const [frame, setFrame] = useState(0)
   useEffect(() => {
@@ -99,7 +129,7 @@ function useSpriteFrame(sprite) {
 
 /* Background style that crops the sheet to one frame and plants the feet.
    `dir` flips horizontally (1 = facing right, -1 = left). */
-function frameStyle(sprite, frame, height, dir) {
+export function frameStyle(sprite, frame, height, dir) {
   const { cols, rows, fw, fh } = sprite
   const col = frame % cols
   const row = Math.floor(frame / cols)

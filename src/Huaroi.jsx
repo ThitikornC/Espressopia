@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Zap, ArrowUpRight } from 'lucide-react';
-import { BEAR, WOLF, FOX, CAPULION, CAT, SpriteMarker } from './sprites.jsx';
+import { BEAR, WOLF, FOX, CAPULION, CAT, CAPULIONWIN, CATRAMELLOSE, WOLFLICANOLOSE, FOXCALOSE, BEARTELOSE, SpriteMarker, useSpriteFrame } from './sprites.jsx';
 
 /* Same parchment map + warm vignette backdrop as the Espressopia landing page */
 const BASE   = import.meta.env.BASE_URL || '/'
@@ -272,28 +272,53 @@ export default function LayerGreedy() {
             <div className="flex-1 min-h-0 flex items-end justify-center gap-1.5 pt-2">
               {[
                 { rank: 4, h: 46 },
-                { rank: 2, h: 74 },
+                { rank: 2, h: 60 },
                 { rank: 1, h: 100 },
-                { rank: 3, h: 60 },
+                { rank: 3, h: 50 },
                 { rank: 5, h: 38 },
               ].map(({ rank, h }) => {
                 const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
                         : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
                         : rank === 3 ? ['#F2B984', '#CD7F32', '#86491a']
                         :              ['#6b5a44', '#473726', '#2c2216']
+                const animSprite = rank === 1 ? CAPULIONWIN : rank === 2 ? WOLFLICANOLOSE : rank === 3 ? CATRAMELLOSE : rank === 4 ? BEARTELOSE : rank === 5 ? FOXCALOSE : null
+                const frame = animSprite ? useSpriteFrame(animSprite) : 0
                 return (
                   <div key={rank} className="flex-1 flex flex-col items-center justify-end h-full">
-                    {/* medal disc with the rank number */}
-                    <div className="rounded-full flex items-center justify-center font-black text-black mb-1 flex-shrink-0"
-                      style={{
-                        width: rank === 1 ? 38 : 30, height: rank === 1 ? 38 : 30,
-                        fontSize: rank === 1 ? 17 : 14,
-                        background: `radial-gradient(circle at 35% 30%, ${m[0]}, ${m[1]} 65%, ${m[2]})`,
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        boxShadow: `0 0 10px ${m[1]}66, 0 2px 4px rgba(0,0,0,0.5)`,
+                    {/* medal disc with the rank number or animation */}
+                    {animSprite ? (
+                      <div style={{
+                        position: 'relative',
+                        width: 90,
+                        height: 90,
+                        marginBottom: '4px',
+                        flexShrink: 0,
                       }}>
-                      {rank}
-                    </div>
+                        <div style={{
+                          position: 'absolute',
+                          width: 90,
+                          height: 90,
+                          backgroundImage: `url("${animSprite.url}")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: `${animSprite.cols * 100}% ${animSprite.rows * 100}%`,
+                          backgroundPosition: `${((frame % animSprite.cols) / (animSprite.cols - 1)) * 100}% ${(Math.floor(frame / animSprite.cols) / (animSprite.rows - 1)) * 100}%`,
+                          imageRendering: 'pixelated',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                        }} />
+                      </div>
+                    ) : (
+                      <div className='rounded-full flex items-center justify-center font-black text-black mb-1 flex-shrink-0'
+                        style={{
+                          width: 30, height: 30,
+                          fontSize: 14,
+                          background: `radial-gradient(circle at 35% 30%, ${m[0]}, ${m[1]} 65%, ${m[2]})`,
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          boxShadow: `0 0 10px ${m[1]}66, 0 2px 4px rgba(0,0,0,0.5)`,
+                        }}>
+                        {rank}
+                      </div>
+                    )}
+                    
                     {/* pedestal block */}
                     <div className="w-full rounded-t-md relative"
                       style={{
