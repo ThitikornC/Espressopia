@@ -67,6 +67,9 @@ export default function LayerGreedy() {
   const apiBase = (searchParams.get('gateway') || import.meta.env.VITE_GATEWAY_URL || '').replace(/\/$/, '')
 
   const [pulse, setPulse] = useState(true);
+  const [deviceSize, setDeviceSize] = useState(typeof window !== 'undefined' ? 
+    (window.innerWidth >= 1024 ? 'desktop' : window.innerWidth >= 768 ? 'tablet' : 'mobile') 
+    : 'desktop')
 
   const cam1Id = localStorage.getItem(PREVIEW_CAM1_KEY) || ''
   const [cam1Pct, setCam1Pct] = useState(0)
@@ -101,6 +104,16 @@ export default function LayerGreedy() {
   useEffect(() => {
     const interval = setInterval(() => setPulse(p => !p), 2000)
     return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth
+      const size = width >= 1024 ? 'desktop' : width >= 768 ? 'tablet' : 'mobile'
+      setDeviceSize(size)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   const gaugeScore  = cam1Id ? cam1Pct : 60
@@ -267,37 +280,39 @@ export default function LayerGreedy() {
           </div>
 
           {/* COL 3: sports-style award podium (อันดับ 1–5) — far-right column */}
-          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 flex flex-col transition-all duration-300 hover:border-[#E6B428]">
-            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-2 flex-shrink-0">อันดับการใช้งาน</h2>
-            <div className="flex-1 min-h-0 flex items-end justify-center gap-1.5 pt-2">
+          <div className="bg-[#321609] border-2 border-solid border-[#B5851F] rounded-xl p-4 md:p-1 flex flex-col transition-all duration-300 hover:border-[#E6B428]" style={{ maxWidth: '100%' }}>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-1 flex-shrink-0" style={{ fontSize: deviceSize === 'tablet' ? '10px' : '12px' }}>อันดับการใช้งาน</h2>
+            <div className="flex-1 min-h-0 flex items-end justify-center gap-0 pt-1" style={{ overflow: 'visible' }}>
               {[
-                { rank: 4, h: 46 },
-                { rank: 2, h: 60 },
-                { rank: 1, h: 100 },
-                { rank: 3, h: 50 },
-                { rank: 5, h: 38 },
-              ].map(({ rank, h }) => {
+                { rank: 4, h: 46, hTablet: 16, hMobile: 16 },
+                { rank: 2, h: 60, hTablet: 20, hMobile: 20 },
+                { rank: 1, h: 100, hTablet: 36, hMobile: 36 },
+                { rank: 3, h: 50, hTablet: 18, hMobile: 18 },
+                { rank: 5, h: 38, hTablet: 13, hMobile: 14 },
+              ].map(({ rank, h, hTablet, hMobile }) => {
                 const m = rank === 1 ? ['#FFE894', '#E6B428', '#9a6f12']
                         : rank === 2 ? ['#ECECF0', '#B9BDC6', '#777b83']
                         : rank === 3 ? ['#F2B984', '#CD7F32', '#86491a']
                         :              ['#6b5a44', '#473726', '#2c2216']
                 const animSprite = rank === 1 ? CAPULIONWIN : rank === 2 ? WOLFLICANOLOSE : rank === 3 ? CATRAMELLOSE : rank === 4 ? BEARTELOSE : rank === 5 ? FOXCALOSE : null
                 const frame = animSprite ? useSpriteFrame(animSprite) : 0
+                const charSize = deviceSize === 'desktop' ? 90 : deviceSize === 'tablet' ? 16 : 35
+                const pedestalHeight = deviceSize === 'desktop' ? h : deviceSize === 'tablet' ? hTablet : hMobile
                 return (
-                  <div key={rank} className="flex-1 flex flex-col items-center justify-end h-full">
+                  <div key={rank} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full" style={{ marginRight: deviceSize === 'tablet' ? '-1px' : '0' }}>
                     {/* medal disc with the rank number or animation */}
                     {animSprite ? (
                       <div style={{
                         position: 'relative',
-                        width: 90,
-                        height: 90,
-                        marginBottom: '4px',
+                        width: charSize,
+                        height: charSize,
+                        marginBottom: '0px',
                         flexShrink: 0,
                       }}>
                         <div style={{
                           position: 'absolute',
-                          width: 90,
-                          height: 90,
+                          width: charSize,
+                          height: charSize,
                           backgroundImage: `url("${animSprite.url}")`,
                           backgroundRepeat: 'no-repeat',
                           backgroundSize: `${animSprite.cols * 100}% ${animSprite.rows * 100}%`,
@@ -322,12 +337,13 @@ export default function LayerGreedy() {
                     {/* pedestal block */}
                     <div className="w-full rounded-t-md relative"
                       style={{
-                        height: `${h}%`,
+                        height: `${pedestalHeight}%`,
                         background: `linear-gradient(180deg, ${m[1]} 0%, ${m[2]} 100%)`,
                         boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.3), inset 0 0 12px rgba(0,0,0,0.25)',
+                        fontSize: deviceSize === 'tablet' ? '12px' : '18px',
                       }}>
-                      <span className="absolute top-1.5 left-1/2 -translate-x-1/2 text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-                        style={{ fontSize: rank === 1 ? 22 : 18 }}>{rank}</span>
+                      <span className="absolute top-1 left-1/2 -translate-x-1/2 text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        style={{ fontSize: rank === 1 ? (deviceSize === 'tablet' ? '14px' : '22px') : (deviceSize === 'tablet' ? '10px' : '18px') }}>{rank}</span>
                     </div>
                   </div>
                 )
