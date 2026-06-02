@@ -1,5 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import StatsCards from './StatsCards.jsx'
+import Marathon from './Marathon.jsx'
 
 const BASE = import.meta.env.BASE_URL || '/'
 const MAP_URL = `${BASE}assets/Espresso/Espresso/map.webp`
@@ -13,10 +15,13 @@ const MAP_W = 1672, MAP_H = 941
 const BEAR_TOWN  = { url: `${IMG_DIR}Bear Citizen-town-v1.png`,  cols: 5, rows: 5, fps: 12 }
 const BEAR_SLEEP = { url: `${IMG_DIR}Bear Citizen-sleep-v1.png`, cols: 5, rows: 5, fps: 8 }
 
-// left/top = position on the map as %; size = fraction of map width
+// left/top = position on the map as %; size = fraction of map width.
+// anchor = fraction of the sprite cell height that touches the ground (1 = cell
+// bottom). The sleep sprite is drawn in the upper part of its cell, so its
+// ground-contact point sits higher than the cell bottom.
 const BEAR_CITIZENS = [
-  { sprite: BEAR_TOWN,  left: 41, top: 50, size: 0.05 },
-  { sprite: BEAR_SLEEP, left: 53, top: 51, size: 0.05 },
+  { sprite: BEAR_TOWN,  left: 41, top: 50, size: 0.05, anchor: 1 },
+  { sprite: BEAR_SLEEP, left: 53, top: 51, size: 0.05, anchor: 0.46 },
 ]
 
 function SpriteAnim({ sprite, size, style = {} }) {
@@ -74,6 +79,33 @@ const VILLAGES = [
   { id: 'garden', name: 'Cat',   left: 73, top: 56, w: 16, h: 22, route: null },
 ]
 
+/* Per-island tuning for the glowing outline derived from the popup silhouette.
+   w = how wide the island spans as a fraction of the map width; dx/dy nudge the
+   outline's centre (fractions of map width/height). Adjust these to make each
+   stroke sit exactly around its island. The shape itself comes from the popup
+   cut image, so it always matches the island's real outline. */
+// toggle the glowing island-edge strokes on/off (hover popup still works)
+const SHOW_ISLAND_EDGE = false
+
+/* Childcare-centre name shown on each island, matched by its animal (same
+   mapping as the dashboard CENTERS). dy nudges the label down from the village
+   centre (fraction of map height). */
+const CENTER_LABELS = {
+  shop:   { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  dy: 0.13 }, // Wolf
+  hotel:  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', dy: 0.13 }, // Lion
+  center: { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', dy: 0.15 }, // Bear
+  bar:    { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     dy: 0.13 }, // Fox
+  garden: { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     dy: 0.13 }, // Cat
+}
+
+const ISLAND_EDGE = {
+  shop:   { w: 0.225, dx:  0.00, dy:  0.020 }, // Wolf  (top-left)
+  hotel:  { w: 0.225, dx:  0.00, dy:  0.020 }, // Lion  (top-right)
+  center: { w: 0.205, dx: -0.010, dy:  0.075 }, // Bear  (middle)
+  bar:    { w: 0.220, dx: -0.008, dy:  0.030 }, // Fox   (bottom-left)
+  garden: { w: 0.225, dx:  0.012, dy:  0.040 }, // Cat   (bottom-right)
+}
+
 export default function WorldMap() {
   const navigate = useNavigate()
   const [selected, setSelected] = useState(null)
@@ -81,7 +113,15 @@ export default function WorldMap() {
   const [playing, setPlaying] = useState(false)
   const containerRef = useRef(null)
   const audioRef = useRef(null)
+  const dashRef = useRef(null)
+  const scrollRef = useRef(null)
   const [containerSize, setContainerSize] = useState({ w: 1200, h: 750 })
+  // true once the page has scrolled down to the dashboard (toggles the guide button)
+  const [scrolled, setScrolled] = useState(false)
+  // live tuning of the island-edge strokes — open with ?tune=1, drag with arrow keys
+  const [edge, setEdge] = useState(ISLAND_EDGE)
+  const [tuning] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('tune'))
+  const [tuneSel, setTuneSel] = useState('center')
   // drag-to-pan offset (used when the map is larger than the viewport, e.g. portrait)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false })
@@ -91,6 +131,37 @@ export default function WorldMap() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  /* Live tuning (only when ?tune=1): pick an island with keys 1–5, then nudge
+     with arrow keys (position) and -/= (size). Values are shown on screen and
+     logged so they can be pasted back into ISLAND_EDGE. */
+  useEffect(() => {
+    if (!tuning) return
+    const ids = ['shop', 'hotel', 'center', 'bar', 'garden']
+    const onKey = (e) => {
+      if (e.key >= '1' && e.key <= '5') { setTuneSel(ids[+e.key - 1]); return }
+      const stepP = e.shiftKey ? 0.001 : 0.005
+      const stepW = e.shiftKey ? 0.002 : 0.01
+      let handled = true
+      setEdge(prev => {
+        const cur = { ...prev[tuneSel] }
+        if (e.key === 'ArrowLeft')  cur.dx = +(cur.dx - stepP).toFixed(4)
+        else if (e.key === 'ArrowRight') cur.dx = +(cur.dx + stepP).toFixed(4)
+        else if (e.key === 'ArrowUp')    cur.dy = +(cur.dy - stepP).toFixed(4)
+        else if (e.key === 'ArrowDown')  cur.dy = +(cur.dy + stepP).toFixed(4)
+        else if (e.key === '-' || e.key === '_') cur.w = +(cur.w - stepW).toFixed(4)
+        else if (e.key === '=' || e.key === '+') cur.w = +(cur.w + stepW).toFixed(4)
+        else { handled = false; return prev }
+        const next = { ...prev, [tuneSel]: cur }
+        // eslint-disable-next-line no-console
+        console.log('ISLAND_EDGE', JSON.stringify(next, null, 2))
+        return next
+      })
+      if (handled) e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [tuning, tuneSel])
 
   /* looping background music (same track as Town view). Browsers block
      autoplay-with-sound, so try to autoplay then fall back to first interaction. */
@@ -201,21 +272,37 @@ export default function WorldMap() {
   const active = selected || hovered
 
   return (
-    <div style={{
-      position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden',
-      backgroundColor: '#2D1008',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div ref={scrollRef} className="wm-scroll"
+      onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 80)}
+      style={{
+        position: 'relative', width: '100%', height: '100%',
+        overflowY: 'auto', overflowX: 'hidden',
+        backgroundColor: '#2D1008',
+      }}>
       <style>{`
         @keyframes frameGlow {
           0%,100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 14px rgba(230,180,40,0.18), inset 0 0 14px rgba(230,180,40,0.08); }
           50%     { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 30px rgba(245,220,128,0.40), inset 0 0 22px rgba(245,220,128,0.16); }
         }
+        @keyframes scrollHintBounce {
+          0%,100% { transform: translateY(0); opacity: 0.85; }
+          50%     { transform: translateY(7px); opacity: 1; }
+        }
+        @keyframes scrollHintBounceUp {
+          0%,100% { transform: translateY(0); opacity: 0.85; }
+          50%     { transform: translateY(-7px); opacity: 1; }
+        }
+        .wm-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .wm-scroll::-webkit-scrollbar { display: none; }
+        @keyframes islandEdge {
+          0%,100% { opacity: 0.55; }
+          50%     { opacity: 1; }
+        }
       `}</style>
 
       <div style={{
         position: 'relative', zIndex: 5,
-        width: '100vw', height: '100dvh',
+        width: '100%', height: '100%',
         /* dark tone behind the map so contain side-margins blend with its edges */
         background: 'radial-gradient(ellipse 70% 70% at 50% 50%, #1a0d05 0%, #0d0602 100%)',
         borderStyle: 'solid', borderWidth: '2px',
@@ -306,7 +393,7 @@ export default function WorldMap() {
               <div key={i} style={{
                 position: 'absolute',
                 left: sx - size / 2,
-                top:  sy - size,        // anchor by the feet
+                top:  sy - size * (c.anchor ?? 1),  // anchor by the ground-contact point
                 zIndex: 2,
                 filter: dim ? 'grayscale(1) brightness(0.55)' : 'none',
                 transition: 'filter 0.4s ease',
@@ -314,6 +401,50 @@ export default function WorldMap() {
               }}>
                 <SpriteAnim sprite={c.sprite} size={size} />
               </div>
+            )
+          })}
+
+          {/* Always-on glowing stroke around each island — the popup cut image's
+              silhouette with its inner area masked out (full shape XOR a slightly
+              smaller copy = just the outline). Sized/placed per island via
+              ISLAND_EDGE so it sits right around the island. No image fill. */}
+          {SHOW_ISLAND_EDGE && Object.entries(VILLAGE_CUTS).map(([vid, cut]) => {
+            const v = VILLAGES.find(x => x.id === vid)
+            const tune = edge[vid] || { w: 0.24, dx: 0, dy: 0 }
+            const on = active === vid
+            const dim = active && !on
+            // village centre on the map
+            const cx = mapLeft + (v.left / 100) * MAP_W * mapScale
+            const cy = mapTop  + (v.top  / 100) * MAP_H * mapScale
+            // idle geometry (small, around the island) vs expanded = popup geometry
+            const iw = tune.w * MAP_W * mapScale, ih = iw * (cut.h / cut.w)
+            const fit = Math.min(containerSize.w / cut.w, containerSize.h / cut.h) * POPUP_SCALE
+            const pw = cut.w * fit, ph = cut.h * fit
+            const W = on ? pw : iw
+            const H = on ? ph : ih
+            const L = on ? (cx - pw / 2) : (cx + tune.dx * MAP_W * mapScale - iw / 2)
+            const T = on ? (cy - ph / 2 + ph * POPUP_SHIFT_Y) : (cy + tune.dy * MAP_H * mapScale - ih / 2)
+            const masks = `url("${cut.url}"), url("${cut.url}")`
+            // constant stroke thickness in px (so it stays thin even when expanded)
+            const t = 5
+            const innerW = Math.max(0, W - 2 * t), innerH = Math.max(0, H - 2 * t)
+            return (
+              <div key={`edge-${vid}`} aria-hidden style={{
+                position: 'absolute',
+                left: L, top: T, width: W, height: H,
+                WebkitMaskImage: masks, maskImage: masks,
+                WebkitMaskRepeat: 'no-repeat, no-repeat', maskRepeat: 'no-repeat, no-repeat',
+                WebkitMaskPosition: 'center, center', maskPosition: 'center, center',
+                WebkitMaskSize: `100% 100%, ${innerW}px ${innerH}px`, maskSize: `100% 100%, ${innerW}px ${innerH}px`,
+                WebkitMaskComposite: 'xor', maskComposite: 'exclude',
+                backgroundColor: (tuning && tuneSel === vid) ? 'rgba(120,230,140,0.98)' : 'rgba(245,220,128,0.95)',
+                filter: 'blur(0.5px) drop-shadow(0 0 5px rgba(245,220,128,0.9)) drop-shadow(0 0 13px rgba(245,220,128,0.55))',
+                opacity: tuning ? 1 : (dim ? 0.14 : 1),
+                animation: (on || dim) ? 'none' : 'islandEdge 2.6s ease-in-out infinite',
+                pointerEvents: 'none',
+                zIndex: 5,
+                transition: 'opacity 0.35s ease, left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease',
+              }} />
             )
           })}
 
@@ -340,6 +471,7 @@ export default function WorldMap() {
                 transformOrigin: 'center',
                 transition: 'opacity 0.35s ease, transform 0.35s ease',
                 pointerEvents: 'none',
+                // gold glow comes from the edge-stroke layer above; just a soft drop shadow here
                 filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.6))',
                 zIndex: 4,
               }} />
@@ -359,6 +491,7 @@ export default function WorldMap() {
                 onClick={e => {
                   e.stopPropagation()
                   if (drag.current.moved) return  // this was a pan, not a tap
+                  if (tuning) { setTuneSel(v.id); return }
                   if (selected === v.id) {
                     if (v.route) navigate(v.route)
                     else setSelected(null)
@@ -379,6 +512,32 @@ export default function WorldMap() {
               />
             )
           })}
+
+          {/* Centre name labels on each island (pan/zoom with the map) */}
+          {VILLAGES.map(v => {
+            const lab = CENTER_LABELS[v.id]
+            if (!lab) return null
+            const cx = mapLeft + (v.left / 100) * MAP_W * mapScale
+            const cy = mapTop  + ((v.top / 100) + lab.dy) * MAP_H * mapScale
+            const on = active === v.id
+            const dim = active && !on
+            const fs = Math.max(11, 0.0105 * MAP_W * mapScale)
+            return (
+              <div key={`label-${v.id}`} aria-hidden style={{
+                position: 'absolute',
+                left: cx, top: cy, transform: 'translate(-50%,-50%)',
+                zIndex: 3, pointerEvents: 'none',
+                width: 0.2 * MAP_W * mapScale, textAlign: 'center',
+                fontFamily: 'Georgia, "Sarabun", serif', fontWeight: 700,
+                fontSize: fs, lineHeight: 1.15, color: '#FFE7B0',
+                textShadow: '0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.7)',
+                opacity: on ? 0 : (dim ? 0.25 : 1),
+                transition: 'opacity 0.35s ease',
+              }}>
+                {lab.name}
+              </div>
+            )
+          })}
         </div>
 
         {/* Vignette */}
@@ -387,7 +546,97 @@ export default function WorldMap() {
           boxShadow: 'inset 0 0 140px 50px rgba(8,3,0,0.7)',
           background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 55%, rgba(4,1,0,0.25) 100%)',
         }} />
+
+        {/* Live tuning panel (only with ?tune=1) */}
+        {tuning && (
+          <div style={{
+            position: 'fixed', top: 12, left: 12, zIndex: 100,
+            background: 'rgba(10,4,1,0.92)', border: '1px solid #C8982C', borderRadius: 10,
+            padding: '10px 12px', color: '#F5DC80', font: '12px/1.5 monospace', maxWidth: 320,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ fontWeight: 700, marginBottom: 6, color: '#fff' }}>🛠 ปรับเส้นเกาะ (?tune)</div>
+            <div style={{ opacity: 0.85, marginBottom: 8 }}>
+              เลือกเกาะ: กด 1–5 หรือคลิกที่เกาะ · ลูกศร = ขยับ · −/= = ย่อ/ขยาย · กด Shift = ละเอียดขึ้น
+            </div>
+            {['shop','hotel','center','bar','garden'].map((id, i) => {
+              const e2 = edge[id]
+              const names = { shop:'หมาป่า', hotel:'สิงโต', center:'หมี', bar:'จิ้งจอก', garden:'แมว' }
+              const seld = tuneSel === id
+              return (
+                <div key={id} onClick={() => setTuneSel(id)} style={{
+                  cursor: 'pointer', padding: '2px 6px', borderRadius: 5,
+                  background: seld ? 'rgba(120,230,140,0.18)' : 'transparent',
+                  color: seld ? '#9be8a8' : '#F5DC80',
+                }}>
+                  {i + 1}. {names[id]}: {`{ w: ${e2.w}, dx: ${e2.dx}, dy: ${e2.dy} }`}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Scroll-down guide — hints that the usage dashboard sits below the map */}
+        <button
+          onClick={() => dashRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          aria-label="เลื่อนลงดูสถิติการใช้งาน"
+          style={{
+            position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            color: '#F5DC80', WebkitTapHighlightColor: 'transparent', outline: 'none',
+            textShadow: '0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7)',
+            filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))',
+          }}
+        >
+          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, fontFamily: 'Georgia, serif' }}>
+            เลื่อนลงดูสถิติการใช้งาน
+          </span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+            style={{ animation: 'scrollHintBounce 1.6s ease-in-out infinite' }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
       </div>
+
+      {/* Usage dashboard section — revealed by scrolling down */}
+      <section ref={dashRef} style={{ padding: '24px 12px 40px' }}>
+        <div style={{ maxWidth: 1700, margin: '0 auto' }}>
+          <div className="bg-[#2A1208] rounded-2xl border-2 border-solid border-[#C8982C] p-4 sm:p-6 shadow-[0_0_32px_rgba(200,152,44,0.35)]">
+            <h2 className="text-base font-extrabold tracking-wider text-white mb-4">เทศบาลตำบลหัวรอ · สถิติการใช้งาน</h2>
+            <div className="mb-6">
+              <StatsCards gaugeScore={60} />
+            </div>
+            <Marathon />
+          </div>
+        </div>
+      </section>
+
+      {/* Back-to-map guide — pinned top-center, mirrors the scroll-down button */}
+      <button
+        onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="เลื่อนขึ้นกลับแผนที่"
+        style={{
+          position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          color: '#F5DC80', WebkitTapHighlightColor: 'transparent', outline: 'none',
+          textShadow: '0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7)',
+          filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))',
+          opacity: scrolled ? 1 : 0, pointerEvents: scrolled ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease',
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+          style={{ animation: 'scrollHintBounceUp 1.6s ease-in-out infinite' }}>
+          <polyline points="6 15 12 9 18 15" />
+        </svg>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, fontFamily: 'Georgia, serif' }}>
+          กลับขึ้นแผนที่
+        </span>
+      </button>
     </div>
   )
 }
