@@ -91,11 +91,11 @@ const SHOW_ISLAND_EDGE = false
    mapping as the dashboard CENTERS). dy nudges the label down from the village
    centre (fraction of map height). */
 const CENTER_LABELS = {
-  shop:   { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  dy: 0.13 }, // Wolf
-  hotel:  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', dy: 0.13 }, // Lion
-  center: { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', dy: 0.15 }, // Bear
-  bar:    { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     dy: 0.13 }, // Fox
-  garden: { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     dy: 0.13 }, // Cat
+  shop:   { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  dx:  0.02, dy: 0.10 }, // Wolf
+  hotel:  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', dx: -0.02, dy: 0.10 }, // Lion
+  center: { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', dx:  0.00, dy: 0.12 }, // Bear
+  bar:    { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     dx:  0.02, dy: 0.11 }, // Fox
+  garden: { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     dx: -0.02, dy: 0.11 }, // Cat
 }
 
 const ISLAND_EDGE = {
@@ -297,6 +297,10 @@ export default function WorldMap() {
         @keyframes islandEdge {
           0%,100% { opacity: 0.55; }
           50%     { opacity: 1; }
+        }
+        @keyframes labelPulse {
+          0%,100% { transform: scale(1);    filter: drop-shadow(0 3px 7px rgba(0,0,0,0.65)); }
+          50%     { transform: scale(1.045); filter: drop-shadow(0 3px 9px rgba(0,0,0,0.65)) drop-shadow(0 0 9px rgba(245,220,128,0.6)); }
         }
       `}</style>
 
@@ -513,28 +517,62 @@ export default function WorldMap() {
             )
           })}
 
-          {/* Centre name labels on each island (pan/zoom with the map) */}
+          {/* Centre name labels on each island — clickable + gently pulsing so
+              players know they can tap them (pan/zoom with the map) */}
           {VILLAGES.map(v => {
             const lab = CENTER_LABELS[v.id]
             if (!lab) return null
-            const cx = mapLeft + (v.left / 100) * MAP_W * mapScale
+            const cx = mapLeft + ((v.left / 100) + (lab.dx || 0)) * MAP_W * mapScale
             const cy = mapTop  + ((v.top / 100) + lab.dy) * MAP_H * mapScale
             const on = active === v.id
             const dim = active && !on
             const fs = Math.max(11, 0.0105 * MAP_W * mapScale)
             return (
-              <div key={`label-${v.id}`} aria-hidden style={{
-                position: 'absolute',
-                left: cx, top: cy, transform: 'translate(-50%,-50%)',
-                zIndex: 3, pointerEvents: 'none',
-                width: 0.2 * MAP_W * mapScale, textAlign: 'center',
-                fontFamily: 'Georgia, "Sarabun", serif', fontWeight: 700,
-                fontSize: fs, lineHeight: 1.15, color: '#FFE7B0',
-                textShadow: '0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.7)',
-                opacity: on ? 0 : (dim ? 0.25 : 1),
-                transition: 'opacity 0.35s ease',
-              }}>
-                {lab.name}
+              <div key={`label-${v.id}`}
+                onClick={e => {
+                  e.stopPropagation()
+                  if (drag.current.moved) return
+                  if (selected === v.id) { if (v.route) navigate(v.route); else setSelected(null) }
+                  else setSelected(v.id)
+                }}
+                onMouseEnter={() => { if (hovered !== v.id) hoverBlip(); setHovered(v.id) }}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  position: 'absolute',
+                  left: cx, top: cy, transform: 'translate(-50%,-50%)',
+                  zIndex: 6, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                  opacity: on ? 0 : (dim ? 0.3 : 1),
+                  transition: 'opacity 0.35s ease',
+                }}>
+                {(() => {
+                  const notch = Math.round(fs * 0.75)
+                  const ribbon = `polygon(0 0, 100% 0, calc(100% - ${notch}px) 50%, 100% 100%, 0 100%, ${notch}px 50%)`
+                  return (
+                    // gold metal ribbon edge
+                    <div style={{
+                      clipPath: ribbon, WebkitClipPath: ribbon,
+                      background: 'linear-gradient(180deg, #F7E08C 0%, #C8982C 55%, #7d5916 100%)',
+                      padding: 2,
+                      filter: 'drop-shadow(0 3px 7px rgba(0,0,0,0.65))',
+                      animation: (on || dim) ? 'none' : 'labelPulse 2.4s ease-in-out infinite',
+                    }}>
+                      {/* dark engraved inner banner */}
+                      <div style={{
+                        clipPath: ribbon, WebkitClipPath: ribbon,
+                        whiteSpace: 'nowrap', textAlign: 'center',
+                        fontFamily: 'Georgia, "Sarabun", serif', fontWeight: 700,
+                        fontSize: fs, lineHeight: 1.2, letterSpacing: 0.5,
+                        padding: `${Math.round(fs * 0.3)}px ${Math.round(fs * 0.7) + notch}px`,
+                        color: '#FBE8C2',
+                        background: 'linear-gradient(180deg, #4a2e12 0%, #2c1708 55%, #190c04 100%)',
+                        boxShadow: 'inset 0 1px 0 rgba(245,220,128,0.35), inset 0 -2px 5px rgba(0,0,0,0.55)',
+                        textShadow: '0 1px 1px rgba(0,0,0,0.95), 0 0 6px rgba(230,180,40,0.3)',
+                      }}>
+                        {lab.name}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}
