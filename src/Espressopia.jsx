@@ -212,6 +212,15 @@ function Ambience() {
   )
 }
 
+const isTouchDevice = () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+
+function requestFullscreen() {
+  const el = document.documentElement
+  if (document.fullscreenElement || document.webkitFullscreenElement) return
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+}
+
 export default function Espressopia() {
   const [hov, setHov] = useState(null)
   const areaRef = useRef(null)
@@ -225,6 +234,7 @@ export default function Espressopia() {
     w: typeof window !== 'undefined' ? window.innerWidth : 1280,
     h: typeof window !== 'undefined' ? window.innerHeight : 720,
   })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
     const handleResize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight })
@@ -232,8 +242,32 @@ export default function Espressopia() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  /* track fullscreen state */
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange)
+    }
+  }, [])
+
   const isPortrait = winSize.h > winSize.w
   const isMobileLandscape = !isPortrait && winSize.h < 550
+
+  /* auto-request fullscreen when entering landscape on mobile */
+  useEffect(() => {
+    if (!isMobileLandscape || !isTouchDevice()) return
+    requestFullscreen()
+    const onInteract = () => requestFullscreen()
+    window.addEventListener('touchstart', onInteract, { once: true, passive: true })
+    window.addEventListener('pointerdown', onInteract, { once: true })
+    return () => {
+      window.removeEventListener('touchstart', onInteract)
+      window.removeEventListener('pointerdown', onInteract)
+    }
+  }, [isMobileLandscape])
 
   useEffect(() => {
     new Image().src = BG_URL
@@ -299,7 +333,7 @@ export default function Espressopia() {
 
   return (
     <div style={{
-      position:'relative', width:'100vw', height:'100vh', overflow:'hidden',
+      position:'relative', width:'100vw', height:'100dvh', overflow:'hidden',
       backgroundColor:'#2D1008',
       backgroundImage:[
         'radial-gradient(ellipse 100% 55% at 50% 0%,   rgba(80,30,4,0.45)  0%,transparent 60%)',
@@ -311,6 +345,31 @@ export default function Espressopia() {
       backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat',
       display:'flex', alignItems:'center', justifyContent:'center',
     }}>
+
+      {/* ── Tap-to-fullscreen hint (mobile landscape only) ── */}
+      {isMobileLandscape && !isFullscreen && isTouchDevice() && (
+        <div
+          onClick={requestFullscreen}
+          style={{
+            position:'absolute', top:0, left:0, right:0, zIndex:100,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            padding:'6px 12px',
+            background:'linear-gradient(180deg, rgba(20,8,2,0.85) 0%, rgba(20,8,2,0) 100%)',
+            cursor:'pointer', pointerEvents:'auto',
+          }}
+        >
+          <span style={{
+            fontFamily:'Georgia, serif', fontSize:11, letterSpacing:1,
+            color:'rgba(245,220,128,0.85)',
+            display:'flex', alignItems:'center', gap:6,
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 3h7v2H5v5H3V3zm11 0h7v7h-2V5h-5V3zM3 14h2v5h5v2H3v-7zm16 5h-5v2h7v-7h-2v5z"/>
+            </svg>
+            แตะเพื่อเต็มจอ
+          </span>
+        </div>
+      )}
 
       {/* ── Golden motes drifting around the town ── */}
       <Ambience />
@@ -381,11 +440,13 @@ export default function Espressopia() {
         <div ref={areaRef} style={{
           flex:1, width:'100%', minHeight:0,
           display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-          gap:8, overflow:'hidden',
         }}>
 
+          {/* inner wrapper — translateY shifts content up without affecting scale calc */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, flexShrink:0, transform:`translateY(${isMobileLandscape ? '-8%' : '-4%'})` }}>
+
           {/* Title — metallic logo with a looping shine sweep across the letters */}
-          <div ref={titleRef} style={{display:'flex',justifyContent:'center',flexShrink:0,width:'100%',marginTop:24}}>
+          <div ref={titleRef} style={{display:'flex',justifyContent:'center',flexShrink:0,width:'100%',marginTop:80}}>
             <div style={{ position:'relative', width: isMobileLandscape ? 'min(260px,40%)' : 'min(520px,80%)' }}>
               <img src={logoUrl} alt="Espressophia" style={{
                 display:'block', width:'100%', height:'auto',
@@ -590,8 +651,10 @@ export default function Espressopia() {
             })}
           </div>
           </div>
-        </div>
-      </div>
+
+          </div>{/* end inner translateY wrapper */}
+        </div>{/* end areaRef */}
+      </div>{/* end golden frame */}
     </div>
   )
 }
