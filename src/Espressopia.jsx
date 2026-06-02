@@ -229,7 +229,7 @@ export default function Espressopia() {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const navigate = useNavigate()
-  const logoUrl = `${BASE}assets/Espresso/Espresso/ESPRESSOPHIA.webp`
+  const logoUrl = `${BASE}assets/Espresso/Espresso/ESPRESSOPHIA.png`
   const [winSize, setWinSize] = useState({
     w: typeof window !== 'undefined' ? window.innerWidth : 1280,
     h: typeof window !== 'undefined' ? window.innerHeight : 720,

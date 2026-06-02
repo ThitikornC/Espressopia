@@ -2,19 +2,52 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const BASE = import.meta.env.BASE_URL || '/'
-const MAP_URL = `${BASE}assets/Espresso/Espresso/map.png`
+const MAP_URL = `${BASE}assets/Espresso/Espresso/map.webp`
 const CUT_BASE = `${BASE}assets/Espresso/Espresso/VilageCutBG/`
+const IMG_DIR = `${BASE}assets/Espresso/Espresso/`
 const BGM_URL = `${BASE}assets/Espresso/MorningWalk.m4a`
 
 const MAP_W = 1672, MAP_H = 941
 
+// 5×5 sprite-sheet animations placed in the Bear city
+const BEAR_TOWN  = { url: `${IMG_DIR}Bear Citizen-town-v1.png`,  cols: 5, rows: 5, fps: 12 }
+const BEAR_SLEEP = { url: `${IMG_DIR}Bear Citizen-sleep-v1.png`, cols: 5, rows: 5, fps: 8 }
+
+// left/top = position on the map as %; size = fraction of map width
+const BEAR_CITIZENS = [
+  { sprite: BEAR_TOWN,  left: 41, top: 50, size: 0.05 },
+  { sprite: BEAR_SLEEP, left: 53, top: 51, size: 0.05 },
+]
+
+function SpriteAnim({ sprite, size, style = {} }) {
+  const total = sprite.cols * sprite.rows
+  const [frame, setFrame] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setFrame(f => (f + 1) % total), 1000 / sprite.fps)
+    return () => clearInterval(id)
+  }, [total, sprite.fps])
+  const col = frame % sprite.cols
+  const row = Math.floor(frame / sprite.cols)
+  return (
+    <div style={{
+      width: size, height: size,
+      backgroundImage: `url("${sprite.url}")`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: `${sprite.cols * 100}% ${sprite.rows * 100}%`,
+      backgroundPosition: `${(col / (sprite.cols - 1)) * 100}% ${(row / (sprite.rows - 1)) * 100}%`,
+      pointerEvents: 'none',
+      ...style,
+    }} />
+  )
+}
+
 // native pixel dimensions of each cut image
 const VILLAGE_CUTS = {
-  center: { url: `${CUT_BASE}Bearvillage.png`, w: 1415, h: 1111 },
-  bar:    { url: `${CUT_BASE}Foxvillage.png`,  w: 1428, h: 1102 },
-  garden: { url: `${CUT_BASE}Catvillage.png`,  w: 1419, h: 1109 },
-  hotel:  { url: `${CUT_BASE}lionvillage.png`, w: 1405, h: 1119 },
-  shop:   { url: `${CUT_BASE}wolfvillage.png`, w: 1370, h: 1148 },
+  center: { url: `${CUT_BASE}Bearvillage.webp`, w: 1415, h: 1111 },
+  bar:    { url: `${CUT_BASE}Foxvillage.webp`,  w: 1428, h: 1102 },
+  garden: { url: `${CUT_BASE}Catvillage.webp`,  w: 1419, h: 1109 },
+  hotel:  { url: `${CUT_BASE}lionvillage.webp`, w: 1405, h: 1119 },
+  shop:   { url: `${CUT_BASE}wolfvillage.webp`, w: 1370, h: 1148 },
 }
 
 const Corner = ({ rot = 0 }) => (
@@ -49,6 +82,9 @@ export default function WorldMap() {
   const containerRef = useRef(null)
   const audioRef = useRef(null)
   const [containerSize, setContainerSize] = useState({ w: 1200, h: 750 })
+  // drag-to-pan offset (used when the map is larger than the viewport, e.g. portrait)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false })
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') setSelected(null) }
@@ -126,8 +162,40 @@ export default function WorldMap() {
   const POPUP_SHIFT_Y = 0.25 // nudge popup down by this fraction of its height
   // cover: fill the whole viewport (map is 16:9, so crop is minimal)
   const mapScale = Math.max(containerSize.w / MAP_W, containerSize.h / MAP_H)
-  const mapLeft  = (containerSize.w - MAP_W * mapScale) / 2
-  const mapTop   = (containerSize.h - MAP_H * mapScale) / 2
+  const mapW = MAP_W * mapScale, mapH = MAP_H * mapScale
+  const baseLeft = (containerSize.w - mapW) / 2
+  const baseTop  = (containerSize.h - mapH) / 2
+
+  // when the map overflows the viewport (portrait), allow dragging to pan around it
+  const pannableX = mapW > containerSize.w + 1
+  const pannableY = mapH > containerSize.h + 1
+  const minPanX = baseLeft, maxPanX = -baseLeft  // baseLeft is ≤ 0 when overflowing
+  const minPanY = baseTop,  maxPanY = -baseTop
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+  // effective top-left of the map after panning (clamped so edges never pull inside)
+  const mapLeft = pannableX ? baseLeft + clamp(pan.x, minPanX, maxPanX) : baseLeft
+  const mapTop  = pannableY ? baseTop  + clamp(pan.y, minPanY, maxPanY) : baseTop
+
+  const onPanDown = (e) => {
+    if (!pannableX && !pannableY) return
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, moved: false }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+  const onPanMove = (e) => {
+    const d = drag.current
+    if (!d.active) return
+    const dx = e.clientX - d.lastX, dy = e.clientY - d.lastY
+    d.lastX = e.clientX; d.lastY = e.clientY
+    if (Math.abs(e.clientX - d.startX) > 6 || Math.abs(e.clientY - d.startY) > 6) d.moved = true
+    setPan(p => ({
+      x: pannableX ? clamp(p.x + dx, minPanX, maxPanX) : 0,
+      y: pannableY ? clamp(p.y + dy, minPanY, maxPanY) : 0,
+    }))
+  }
+  const onPanUp = (e) => {
+    drag.current.active = false
+    e.currentTarget.releasePointerCapture?.(e.pointerId)
+  }
 
   // a village is "active" when clicked (locked) or hovered — both show its popup
   const active = selected || hovered
@@ -162,17 +230,16 @@ export default function WorldMap() {
         <div style={{ position: 'absolute', bottom: -3, right: -3, zIndex: 22 }}><Corner rot={180} /></div>
 
 
-        <div style={{
-          position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 30, pointerEvents: 'none',
-          fontFamily: 'Georgia, serif', fontSize: 15, letterSpacing: 3,
-          fontWeight: 700, textTransform: 'uppercase',
-          backgroundImage: 'linear-gradient(180deg, #fff7e0 0%, #F5DC80 40%, #C8982C 100%)',
-          WebkitBackgroundClip: 'text', backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          Esprestopia
-        </div>
+        <img
+          src={`${IMG_DIR}ESPRESSOPHIA.png`}
+          alt="Esprestopia"
+          style={{
+            position: 'absolute', top: 40, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 30, pointerEvents: 'none',
+            height: 'clamp(36px, 6vh, 64px)', width: 'auto',
+            objectFit: 'contain',
+          }}
+        />
 
         {/* Sound toggle */}
         <button
@@ -206,8 +273,16 @@ export default function WorldMap() {
         {/* Map layer */}
         <div
           ref={containerRef}
-          onClick={() => setSelected(null)}
-          style={{ position: 'absolute', inset: 0 }}
+          onClick={() => { if (!drag.current.moved) setSelected(null) }}
+          onPointerDown={onPanDown}
+          onPointerMove={onPanMove}
+          onPointerUp={onPanUp}
+          onPointerCancel={onPanUp}
+          style={{
+            position: 'absolute', inset: 0,
+            touchAction: (pannableX || pannableY) ? 'none' : 'auto',
+            cursor: (pannableX || pannableY) ? 'grab' : 'default',
+          }}
         >
           {/* Base map — grayscale when a village is active (hovered or selected) */}
           <div style={{
@@ -219,6 +294,28 @@ export default function WorldMap() {
             filter: active ? 'grayscale(1) brightness(0.55)' : 'none',
             transition: 'filter 0.4s ease',
           }} />
+
+          {/* Animated Bear citizens living in the Bear city */}
+          {BEAR_CITIZENS.map((c, i) => {
+            const size = c.size * MAP_W * mapScale
+            const sx = mapLeft + (c.left / 100) * MAP_W * mapScale
+            const sy = mapTop  + (c.top  / 100) * MAP_H * mapScale
+            // grey out together with the map when another village is active
+            const dim = active && active !== 'center'
+            return (
+              <div key={i} style={{
+                position: 'absolute',
+                left: sx - size / 2,
+                top:  sy - size,        // anchor by the feet
+                zIndex: 2,
+                filter: dim ? 'grayscale(1) brightness(0.55)' : 'none',
+                transition: 'filter 0.4s ease',
+                pointerEvents: 'none',
+              }}>
+                <SpriteAnim sprite={c.sprite} size={size} />
+              </div>
+            )
+          })}
 
           {/* Cut-image popup — shows on hover or click, anchored on its map position */}
           {Object.entries(VILLAGE_CUTS).map(([vid, cut]) => {
@@ -261,6 +358,7 @@ export default function WorldMap() {
                 key={v.id}
                 onClick={e => {
                   e.stopPropagation()
+                  if (drag.current.moved) return  // this was a pan, not a tap
                   if (selected === v.id) {
                     if (v.route) navigate(v.route)
                     else setSelected(null)
