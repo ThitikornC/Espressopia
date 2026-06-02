@@ -90,12 +90,13 @@ const SHOW_ISLAND_EDGE = false
 /* Childcare-centre name shown on each island, matched by its animal (same
    mapping as the dashboard CENTERS). dy nudges the label down from the village
    centre (fraction of map height). */
+const ICON_DIR = `${BASE}assets/Espresso/Espresso/Espresso_icon/opt/`
 const CENTER_LABELS = {
-  shop:   { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  dx:  0.02, dy: 0.10 }, // Wolf
-  hotel:  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', dx: -0.02, dy: 0.10 }, // Lion
-  center: { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', dx:  0.00, dy: 0.12 }, // Bear
-  bar:    { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     dx:  0.02, dy: 0.11 }, // Fox
-  garden: { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     dx: -0.02, dy: 0.11 }, // Cat
+  shop:   { name: 'ศูนย์พัฒนาเด็กเล็กวัดมหาวนาราม',  icon: 'Wolficano_icon.webp', dx:  0.02, dy: 0.10 }, // Wolf
+  hotel:  { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 2', icon: 'Capulion_icon.webp',  dx: -0.02, dy: 0.10 }, // Lion
+  center: { name: 'ศูนย์พัฒนาเด็กเล็กเทศบาลหัวรอ 1', icon: 'Bearte_icon.webp',    dx:  0.00, dy: 0.12 }, // Bear
+  bar:    { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 2',     icon: 'Foxca_icon.webp',     dx:  0.02, dy: 0.11 }, // Fox
+  garden: { name: 'ศูนย์พัฒนาเด็กเล็กสระโคล่ 1',     icon: 'Catramel_icon.webp',  dx: -0.02, dy: 0.11 }, // Cat
 }
 
 const ISLAND_EDGE = {
@@ -301,6 +302,14 @@ export default function WorldMap() {
         @keyframes labelPulse {
           0%,100% { transform: scale(1);    filter: drop-shadow(0 3px 7px rgba(0,0,0,0.65)); }
           50%     { transform: scale(1.045); filter: drop-shadow(0 3px 9px rgba(0,0,0,0.65)) drop-shadow(0 0 9px rgba(245,220,128,0.6)); }
+        }
+        @keyframes labelFloat {
+          0%,100% { transform: translateY(0); }
+          50%     { transform: translateY(-6px); }
+        }
+        @keyframes pinBlink {
+          0%,100% { box-shadow: 0 0 6px rgba(245,220,128,0.7), 0 2px 4px rgba(0,0,0,0.5); }
+          50%     { box-shadow: 0 0 14px rgba(245,220,128,1), 0 0 22px rgba(245,220,128,0.6), 0 2px 4px rgba(0,0,0,0.5); }
         }
       `}</style>
 
@@ -545,31 +554,58 @@ export default function WorldMap() {
                   transition: 'opacity 0.35s ease',
                 }}>
                 {(() => {
-                  const notch = Math.round(fs * 0.75)
-                  const ribbon = `polygon(0 0, 100% 0, calc(100% - ${notch}px) 50%, 100% 100%, 0 100%, ${notch}px 50%)`
+                  const med = Math.round(fs * 3.0)   // medallion diameter
+                  const ring = Math.max(2, Math.round(fs * 0.2))
                   return (
-                    // gold metal ribbon edge
                     <div style={{
-                      clipPath: ribbon, WebkitClipPath: ribbon,
-                      background: 'linear-gradient(180deg, #F7E08C 0%, #C8982C 55%, #7d5916 100%)',
-                      padding: 2,
-                      filter: 'drop-shadow(0 3px 7px rgba(0,0,0,0.65))',
-                      animation: (on || dim) ? 'none' : 'labelPulse 2.4s ease-in-out infinite',
+                      position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                      animation: (on || dim) ? 'none' : 'labelFloat 2.2s ease-in-out infinite',
                     }}>
-                      {/* dark engraved inner banner */}
+                      {/* medallion + plaque row */}
                       <div style={{
-                        clipPath: ribbon, WebkitClipPath: ribbon,
-                        whiteSpace: 'nowrap', textAlign: 'center',
-                        fontFamily: 'Georgia, "Sarabun", serif', fontWeight: 700,
-                        fontSize: fs, lineHeight: 1.2, letterSpacing: 0.5,
-                        padding: `${Math.round(fs * 0.3)}px ${Math.round(fs * 0.7) + notch}px`,
-                        color: '#FBE8C2',
-                        background: 'linear-gradient(180deg, #4a2e12 0%, #2c1708 55%, #190c04 100%)',
-                        boxShadow: 'inset 0 1px 0 rgba(245,220,128,0.35), inset 0 -2px 5px rgba(0,0,0,0.55)',
-                        textShadow: '0 1px 1px rgba(0,0,0,0.95), 0 0 6px rgba(230,180,40,0.3)',
+                        display: 'flex', alignItems: 'center',
+                        animation: (on || dim) ? 'none' : 'labelPulse 2.4s ease-in-out infinite',
                       }}>
-                        {lab.name}
+                        {/* round gold medallion with the animal icon */}
+                        <div style={{
+                          width: med, height: med, borderRadius: '50%', flexShrink: 0, zIndex: 2,
+                          background: 'radial-gradient(circle at 50% 38%, #3a2410 0%, #190c04 100%)',
+                          border: `${ring}px solid #C8982C`,
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 3px rgba(245,220,128,0.45), 0 3px 9px rgba(0,0,0,0.65)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                        }}>
+                          {lab.icon && (
+                            <img src={`${ICON_DIR}${lab.icon}`} alt="" aria-hidden style={{
+                              width: '78%', height: '78%', objectFit: 'contain',
+                              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+                            }} />
+                          )}
+                        </div>
+                        {/* name plaque, tucked under the medallion's right edge */}
+                        <div style={{
+                          marginLeft: -Math.round(med * 0.34),
+                          paddingLeft: Math.round(med * 0.42),
+                          paddingRight: Math.round(fs * 1),
+                          paddingTop: Math.round(fs * 0.34), paddingBottom: Math.round(fs * 0.34),
+                          whiteSpace: 'nowrap',
+                          fontFamily: 'Georgia, "Sarabun", serif', fontWeight: 700,
+                          fontSize: fs, lineHeight: 1.1, letterSpacing: 0.5, color: '#FBE8C2',
+                          background: 'linear-gradient(180deg, #4a2e12 0%, #2c1708 55%, #190c04 100%)',
+                          border: '1.5px solid #C8982C', borderRadius: Math.round(fs * 0.4),
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.55), inset 0 1px 0 rgba(245,220,128,0.3), inset 0 -2px 5px rgba(0,0,0,0.5), 0 3px 8px rgba(0,0,0,0.55)',
+                          textShadow: '0 1px 1px rgba(0,0,0,0.95), 0 0 6px rgba(230,180,40,0.3)',
+                        }}>
+                          {lab.name}
+                        </div>
                       </div>
+                      {/* gold pin pointing down at the location */}
+                      <div aria-hidden style={{ width: 2, height: Math.round(fs * 1.1), background: 'linear-gradient(#E6B428, #7d5916)' }} />
+                      <div aria-hidden style={{
+                        width: Math.round(fs * 0.6), height: Math.round(fs * 0.6), borderRadius: '50%', marginTop: -1,
+                        background: 'radial-gradient(circle at 35% 30%, #FBE8C2, #E6B428 55%, #7d5916)',
+                        boxShadow: '0 0 7px rgba(245,220,128,0.8), 0 2px 4px rgba(0,0,0,0.5)',
+                        animation: (on || dim) ? 'none' : 'pinBlink 1.6s ease-in-out infinite',
+                      }} />
                     </div>
                   )
                 })()}
