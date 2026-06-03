@@ -334,9 +334,11 @@ export default function WorldMap() {
           src={`${IMG_DIR}ESPRESSOPHIA.png`}
           alt="Esprestopia"
           style={{
-            position: 'absolute', top: 40, left: '50%', transform: 'translateX(-50%)',
+            position: 'absolute', top: 'clamp(8px, 3.5vh, 40px)', left: '50%', transform: 'translateX(-50%)',
             zIndex: 30, pointerEvents: 'none',
-            height: 'clamp(36px, 6vh, 64px)', width: 'auto',
+            // scale by the smaller viewport axis so it stays proportional in
+            // landscape (short) phones, and cap width so it never overflows
+            height: 'clamp(30px, 9vmin, 64px)', width: 'auto', maxWidth: '72vw',
             objectFit: 'contain',
           }}
         />
