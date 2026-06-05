@@ -72,10 +72,10 @@ const Corner = ({ rot = 0 }) => (
 /* Only the 5 animal cities that have a cut image. left/top = center of the
    city as % of the map image; w/h = clickable size as % of the map image. */
 const VILLAGES = [
-  { id: 'center', name: 'Bear',  left: 47, top: 37, w: 18, h: 26, route: null },
+  { id: 'center', name: 'Bear',  left: 47, top: 37, w: 18, h: 26, route: '/catagoly' },
   { id: 'shop',   name: 'Wolf',  left: 27, top: 22, w: 16, h: 22, route: null },
   { id: 'hotel',  name: 'Lion',  left: 70, top: 20, w: 16, h: 22, route: null },
-  { id: 'bar',    name: 'Fox',   left: 26, top: 56, w: 16, h: 22, route: '/Huaroi' },
+  { id: 'bar',    name: 'Fox',   left: 26, top: 56, w: 16, h: 22, route: null },
   { id: 'garden', name: 'Cat',   left: 73, top: 56, w: 16, h: 22, route: null },
 ]
 
@@ -250,15 +250,19 @@ export default function WorldMap() {
 
   const onPanDown = (e) => {
     if (!pannableX && !pannableY) return
+    // อย่าเพิ่ง setPointerCapture ที่นี่ — มันจะ "ดูด" click ของลูก (popup/label) ไปที่ map
     drag.current = { active: true, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, moved: false }
-    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const onPanMove = (e) => {
     const d = drag.current
     if (!d.active) return
     const dx = e.clientX - d.lastX, dy = e.clientY - d.lastY
     d.lastX = e.clientX; d.lastY = e.clientY
-    if (Math.abs(e.clientX - d.startX) > 6 || Math.abs(e.clientY - d.startY) > 6) d.moved = true
+    if (Math.abs(e.clientX - d.startX) > 6 || Math.abs(e.clientY - d.startY) > 6) {
+      // เริ่มลากจริงแล้วค่อยจับ pointer (เพื่อให้ pan ลื่นแม้เมาส์ออกนอกกรอบ)
+      if (!d.moved) e.currentTarget.setPointerCapture?.(e.pointerId)
+      d.moved = true
+    }
     setPan(p => ({
       x: pannableX ? clamp(p.x + dx, minPanX, maxPanX) : 0,
       y: pannableY ? clamp(p.y + dy, minPanY, maxPanY) : 0,
@@ -473,7 +477,18 @@ export default function WorldMap() {
             const cy = mapTop  + (v.top  / 100) * MAP_H * mapScale
             const on = active === vid
             return (
-              <div key={vid} style={{
+              <div
+                key={vid}
+                onMouseEnter={() => setHovered(vid)}
+                onMouseLeave={() => setHovered(null)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (drag.current.moved) return
+                  if (v.route) navigate(v.route)            // เกาะที่มีปลายทาง → กดที่ popup เข้าได้เลย
+                  else if (selected === vid) setSelected(null)
+                  else setSelected(vid)
+                }}
+                style={{
                 position: 'absolute',
                 left: cx - w / 2,
                 top:  cy - h / 2 + h * POPUP_SHIFT_Y,
@@ -485,7 +500,9 @@ export default function WorldMap() {
                 transform: on ? 'scale(1)' : 'scale(0.92)',
                 transformOrigin: 'center',
                 transition: 'opacity 0.35s ease, transform 0.35s ease',
-                pointerEvents: 'none',
+                // รับคลิก/hover เฉพาะตอนแสดงอยู่ (ไม่งั้นบังการคลิกแผนที่)
+                pointerEvents: on ? 'auto' : 'none',
+                cursor: 'pointer',
                 // gold glow comes from the edge-stroke layer above; just a soft drop shadow here
                 filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.6))',
                 zIndex: 4,
