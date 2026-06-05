@@ -379,7 +379,7 @@ export default function WorldMap() {
         {/* Map layer */}
         <div
           ref={containerRef}
-          onClick={() => { if (!drag.current.moved) setSelected(null) }}
+          onClick={() => { if (!drag.current.moved) { setSelected(null); setHovered(null) } }}
           onPointerDown={onPanDown}
           onPointerMove={onPanMove}
           onPointerUp={onPanUp}
@@ -485,8 +485,7 @@ export default function WorldMap() {
                   e.stopPropagation()
                   if (drag.current.moved) return
                   if (v.route) navigate(v.route)            // เกาะที่มีปลายทาง → กดที่ popup เข้าได้เลย
-                  else if (selected === vid) setSelected(null)
-                  else setSelected(vid)
+                  else { setSelected(null); setHovered(null) }  // เกาะอื่น → คลิกเพื่อปิด popup
                 }}
                 style={{
                 position: 'absolute',
